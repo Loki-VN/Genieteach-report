@@ -19,7 +19,7 @@ Mở `tests.html` (tiêu chí 3, 5). `--standalone` chạy trên bản một fil
 | # | Tiêu chí (mục 11) | Kết quả | Bằng chứng |
 |---|---|---|---|
 | 1 | Mọi trang mở qua `file://` không lỗi console; render < 1 giây | ✅ Đạt | 17 trang/tab, cả hai bản: 0 lỗi console. Render 402–543 ms (bản nhiều file), 429–572 ms (bản một file) |
-| 2 | Mọi click-through điều hướng đúng và giữ filter + kỳ dữ liệu | ✅ Đạt | 19 trang nguồn, 924 link, 440 đích (bản một file: 505 đích, gồm tài liệu): đích đúng, giữ kỳ, mở không lỗi. 22/22 bước tương tác đạt ở cả hai bản |
+| 2 | Mọi click-through điều hướng đúng và giữ filter + kỳ dữ liệu | ✅ Đạt | 19 trang nguồn, 926 link, 441 đích (bản một file: 925 link, 506 đích, gồm tài liệu): đích đúng, giữ kỳ, mở không lỗi. 22/22 bước tương tác đạt ở cả hai bản |
 | 3 | Bốn chế độ kỳ cho kết quả nhất quán (Σ ngày trong tuần = tuần) | ✅ Đạt | `tests.html`, nhóm "Kỳ dữ liệu — 4 chế độ": Σ Ngày = Tuần, Khoảng = Tuần, Σ Tuần = Tháng, kỳ liền trước của cả 4 chế độ |
 | 4 | Đổi cấu hình → màu, nhãn diễn giải và cảnh báo đổi ở mọi trang | ✅ Đạt | Xem §4: số liệu trước/sau trên 7 trang |
 | 5 | Mọi rule mục 5 kích hoạt ≥ 1 lần; không rule nào chạy dưới cỡ mẫu tối thiểu | ✅ Đạt | 38/38 rule phát sinh (332 cảnh báo). Ca biên 29 vs 30 bản ghi, 9 vs 10 học sinh, lớp TA-04 sĩ số 8 |
@@ -58,7 +58,7 @@ Mở `tests.html` (tiêu chí 3, 5). `--standalone` chạy trên bản một fil
 - link sang trang báo cáo mang theo `period`/`date`. Không bắt buộc với Cấu hình, Danh mục biểu đồ, tài liệu, trang chủ;
 - mở từng đích khác nhau không lỗi console, không có biểu đồ lỗi.
 
-Kết quả: 924 link, 440 đích khác nhau (bản một file 505, vì tài liệu cũng là trang), **0 vấn đề**. Điều hướng bằng code (click cột biểu đồ, dòng bảng, popup so sánh) đều đi qua `ctx.href` → `GT.nav.href`, giữ `period, date, from, to, groupId, classId, courseId`. Link "Chi tiết →" của cảnh báo giữ kỳ qua `GT.nav.carry`.
+Kết quả: 926 link, 441 đích khác nhau (bản một file: 925 link, 506 đích, vì tài liệu cũng là trang), **0 vấn đề**. Điều hướng bằng code (click cột biểu đồ, dòng bảng, popup so sánh) đều đi qua `ctx.href` → `GT.nav.href`, giữ `period, date, from, to, groupId, classId, courseId`. Link "Chi tiết →" của cảnh báo giữ kỳ qua `GT.nav.carry`.
 
 Các bước tương tác (`interact.js`, 22 bước, cả hai bản đều đạt): đổi kỳ Ngày/Tuần/Tháng/Khoảng, lùi kỳ, lọc nhóm lớp/khóa, menu bên giữ ngữ cảnh, popup so sánh → click lớp, chế độ Bảng, xuất CSV (UTF-8 BOM), báo cáo buổi học, đổi trạng thái + ghi chú cảnh báo (còn sau khi tải lại), mở rộng cảnh báo gộp, hồ sơ học sinh và bản in, lọc danh mục biểu đồ, tắt hạng mục Đề xuất, link công thức → anchor METRICS.md.
 

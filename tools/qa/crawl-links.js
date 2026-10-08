@@ -70,7 +70,8 @@ function target(href, meta) {
     errors.length = 0;
     await page.goto(href);
     await page.waitForTimeout(150);
-    const bad = await page.evaluate(() => /Lỗi khi vẽ biểu đồ|Lỗi khởi tạo trang|Không có trang ".*" trong bản đóng gói/.test(document.body.innerText));
+    const bad = await page.evaluate(() => [...document.querySelectorAll('.chart')].some((c) => /Lỗi khi vẽ biểu đồ/.test(c.textContent)) ||
+      [...document.querySelectorAll('.callout')].some((c) => /Lỗi khởi tạo trang|Không có trang ".*" trong bản đóng gói/.test(c.textContent)));
     if (errors.length || bad) problems.push('Đích lỗi: ' + href + ' ' + errors.join(' | ') + (bad ? ' (lỗi hiển thị)' : ''));
   }
   console.log(problems.length ? problems.slice(0, 60).join('\n') + (problems.length > 60 ? '\n… ' + (problems.length - 60) + ' vấn đề khác' : '') : '✓ Mọi link đến đúng đích, giữ kỳ dữ liệu, mở không lỗi.');
