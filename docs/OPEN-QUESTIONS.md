@@ -191,3 +191,32 @@ UTF-8 có BOM (Excel đọc đúng tiếng Việt), phân tách bằng dấu ph�
 
 **OQ-45 — Chế độ so sánh của `class.html`** [GIẢ ĐỊNH]
 Khi chọn "Tất cả" hoặc một nhóm lớp: các biểu đồ cấp học sinh được thay bằng biểu đồ cùng chỉ số theo từng lớp (bar/stacked theo lớp, có mốc TB trường và TB nhóm); heatmap học sinh × buổi / học sinh × CĐR ẩn, gợi ý chọn một lớp.
+
+### Phát sinh khi code Phase 1
+
+**OQ-46 — LOSnapshot thêm cỡ mẫu** [GIẢ ĐỊNH]
+Entity spec chỉ có `passRate`, `coverage`. Để gộp xu hướng nhiều lớp có trọng số (cấp khóa/toàn trường), snapshot thêm `withData` và `enrolled`. Ảnh chụp tuần tính bằng ngưỡng **tại thời điểm chụp**; đổi cấu hình không làm thay đổi các tuần đã chụp (chỉ đổi đường ngưỡng trên biểu đồ). → [CÂU HỎI] Hệ thống thật có muốn tính lại lịch sử khi đổi ngưỡng không?
+
+**OQ-47 — Cỡ mẫu cấp buổi (ATT-C04)** [GIẢ ĐỊNH]
+Một buổi hiếm khi có ≥ 30 bản ghi. Áp dụng: lớp phải đủ cỡ mẫu chung (30 bản ghi / 10 học sinh trong cửa sổ) và buổi phải có ≥ 10 học sinh đã điểm danh.
+
+**OQ-48 — DATA-01 không tính CĐR coverage = 0** [GIẢ ĐỊNH]
+Coverage = 0 là trạng thái Xám, thuộc DATA-02 (khi khóa ≥ 70% thời lượng). DATA-01 chỉ xét 0 < coverage < 30% (khớp định nghĩa badge "Dữ liệu mỏng"), tránh một CĐR sinh 2 cảnh báo.
+
+**OQ-49 — "Chưa báo cáo" trong OPS-03** [GIẢ ĐỊNH]
+Một buổi được tính "chưa báo cáo" khi đã kết thúc quá 24 giờ (cùng ngưỡng OPS-02); "chưa điểm danh" khi đã bắt đầu quá 15 phút (cùng ngưỡng OPS-01).
+
+**OQ-50 — Mốc so sánh của bảng nhiệm vụ bất thường** [GIẢ ĐỊNH]
+So với trung vị của mọi nhiệm vụ đã quá hạn cùng khóa từ đầu khóa (ổn định hơn so với chỉ trong kỳ đang xem).
+
+**OQ-51 — Mẫu số của LO-C02** [GIẢ ĐỊNH]
+"≥ 30% số chuẩn đầu ra của khóa" = trên tổng số CĐR của khóa (kể cả CĐR chưa có dữ liệu), đúng nghĩa đen của spec.
+
+**OQ-52 — Cỡ mẫu CUR-02, HW-T01** [GIẢ ĐỊNH]
+CUR-02 cần ≥ 30 học sinh có dữ liệu toàn trường. HW-T01 cần ≥ 10 học sinh được giao; điều kiện "điểm TB < 5" cần ≥ 5 bài đã chấm.
+
+**OQ-53 — Rule cấp học sinh ở lớp sĩ số nhỏ** [GIẢ ĐỊNH]
+Cỡ mẫu tối thiểu của spec áp cho rule tỉ lệ cấp lớp. Rule cấp học sinh vẫn chạy ở lớp nhỏ (TA-04), và nếu ≥ 5 học sinh vi phạm thì vẫn gộp thành cảnh báo cấp lớp (gộp không phải phép tính tỉ lệ cấp lớp).
+
+**OQ-54 — Rule ONL-S chỉ xét khóa đang chạy** [GIẢ ĐỊNH]
+ONL-S01/S02/S03 và ONL-C01 chỉ áp dụng cho khóa trực tuyến chưa đến hạn; khóa đã đóng được phản ánh qua tỉ lệ hoàn thành đúng hạn (ONL-C02, báo cáo Học ở nhà).

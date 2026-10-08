@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kiểm thử chỉ số</title>
+  <style>
+    :root { --brand: #A878D8; --brand-dark: #5B3E8C; --brand-light: #F2EBFA; --ok: #22A06B; --bad: #E5484D; --text: #1F2330; --muted: #5E6472; --line: #E6E1EE; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #FAF8FD; }
+    header { background: var(--brand-dark); color: #fff; padding: 16px 24px; }
+    header h1 { margin: 0; font-size: 20px; }
+    header p { margin: 4px 0 0; opacity: .85; font-size: 13px; }
+    main { max-width: 1080px; margin: 0 auto; padding: 16px; }
+    .summary { padding: 12px 16px; border-radius: 10px; font-size: 16px; margin: 8px 0 16px; border: 1px solid var(--line); background: #fff; }
+    .summary.ok { border-left: 6px solid var(--ok); }
+    .summary.fail { border-left: 6px solid var(--bad); }
+    h2 { font-size: 15px; color: var(--brand-dark); margin: 20px 0 6px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    td { padding: 7px 10px; border-top: 1px solid var(--line); font-size: 13.5px; vertical-align: top; }
+    td.st { width: 80px; font-weight: 600; white-space: nowrap; }
+    tr.ok td.st { color: var(--ok); }
+    tr.fail td.st { color: var(--bad); }
+    tr.fail { background: #FDF0F0; }
+    .msg { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+    a { color: var(--brand-dark); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kiểm thử chỉ số và cảnh báo — Báo cáo Học vụ</h1>
+    <p>Điểm biên 50%/80%, coverage = 0, mẫu số = 0, học sinh nhiều lớp, weighted vs unweighted, cỡ mẫu tối thiểu, chống trùng, gộp, nhất quán kỳ. Thêm <code>?debug=1</code> để in bảng đối chiếu kịch bản ra console.</p>
+  </header>
+  <main>
+    <p><a href="index.html">← Về trang chủ</a></p>
+    <div id="summary" class="summary">Đang chạy…</div>
+    <div id="results"></div>
+  </main>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/mock-data.js"></script>
+  <script src="assets/js/data-index.js"></script>
+  <script src="assets/js/metrics.js"></script>
+  <script src="assets/js/alerts.js"></script>
+  <script src="assets/js/pages/tests.js"></script>
+</body>
+</html>
