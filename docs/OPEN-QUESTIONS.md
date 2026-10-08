@@ -235,3 +235,8 @@ Chỉ gồm hành vi giáo viên kiểm soát được: điểm danh đúng th�
 **OQ-58 — Danh mục biểu đồ** [GIẢ ĐỊNH]
 Bản thu nhỏ trong `chart-catalog.html` dựng lại bằng cùng builder của `charts.js` với dữ liệu mock thật, nhưng phạm vi rút gọn (ví dụ một lớp/khóa tiêu biểu) để trang vẫn dưới 1 giây. Ô chỉ số, bảng và thẻ HTML không có bản thu nhỏ biểu đồ.
 
+
+## F. Đóng gói một file
+
+**OQ-59 — Bản một file nhúng ECharts thay vì nạp từ CDN** [GIẢ ĐỊNH]
+Spec yêu cầu nạp ECharts 5.5.0 từ CDN cố định phiên bản. Bản nhiều file (`index.html`, `hoc-vu/*.html`) giữ đúng như vậy. Bản đóng gói `dist/GenieTeach-HocVu.html` được làm theo yêu cầu "chạy được chỉ với một file HTML", nên nhúng nguyên văn `echarts.min.js` 5.5.0 (lấy từ npm, cùng nội dung CDN jsDelivr phục vụ, giữ header giấy phép Apache 2.0) để chạy offline. Trong bản này, trang chọn bằng `?p=<trang>`; link dạng `class.html?…` được đổi sang `?p=class&…` khi chạy, code các trang không đổi. Bản một file sinh lại bằng `node tools/build-standalone.js`, không sửa tay.

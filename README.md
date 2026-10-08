@@ -5,9 +5,15 @@ Dữ liệu là mock sinh tất định theo seed; mọi số liệu, cảnh bá
 
 ## Mở prototype
 
+**Cách nhanh nhất — bản một file:** mở **`dist/GenieTeach-HocVu.html`** bằng trình duyệt (double-click). File này chứa đủ 12 trang báo cáo, trang chủ, `tests.html`, tài liệu và thư viện ECharts; chạy offline, không cần Internet hay web server, gửi cho người khác chỉ cần gửi một file (~1,8 MB). Trang đang xem nằm ở tham số `?p=` (ví dụ `GenieTeach-HocVu.html?p=class&classId=10A4`), nên vẫn chia sẻ được link có kỳ và bộ lọc.
+
+**Bản nhiều file (bản phát triển):**
+
 1. Clone repo (hoặc tải zip) và mở **`index.html`** bằng trình duyệt (Chrome/Edge/Firefox bản mới). Mở trực tiếp qua `file://` được, không cần web server.
-2. Cần Internet để nạp ECharts 5.5.0 từ CDN (`cdn.jsdelivr.net`, phiên bản cố định). Khi offline, các trang vẫn chạy: biểu đồ hiện thông báo "Không tải được thư viện biểu đồ", số liệu xem ở chế độ **Bảng**.
+2. Cần Internet để nạp ECharts 5.5.0 từ CDN (`cdn.jsdelivr.net`, phiên bản cố định). Khi offline, các trang vẫn chạy: biểu đồ hiện thông báo "Không tải được thư viện biểu đồ", số liệu xem ở chế độ **Bảng** — hoặc dùng bản một file ở trên.
 3. Từ trang chủ chọn vai trò **Học vụ**. Công tắc "Hiện hạng mục Đề xuất" ẩn/hiện mọi trang, biểu đồ và chỉ số gắn nhãn **Đề xuất** (lưu trong trình duyệt).
+
+Cấu hình và trạng thái cảnh báo lưu trong `localStorage` của trình duyệt. Trên Chrome/Edge, mọi file mở qua `file://` dùng chung vùng lưu này, nên hai bản thấy cùng một cấu hình.
 
 "Hôm nay" cố định là **Thứ Năm 08/10/2026, 09:40** để dữ liệu nằm giữa kỳ học.
 
@@ -55,6 +61,13 @@ docs/
   METRICS.md            Định nghĩa và công thức từng chỉ số
   ALERTS.md             Danh mục rule: điều kiện, cửa sổ, cỡ mẫu tối thiểu, kịch bản mock
   OPEN-QUESTIONS.md     Câu hỏi mở và các [GIẢ ĐỊNH] / [SỬA SPEC] đã áp dụng
+  ACCEPTANCE.md         Checklist nghiệm thu mục 11 của spec, kèm bằng chứng và cách chạy lại
+dist/GenieTeach-HocVu.html  Bản đóng gói một file (sinh bằng tools/build-standalone.js — không sửa tay)
+vendor/echarts-5.5.0/   ECharts 5.5.0 bản min + LICENSE/NOTICE (Apache 2.0), dùng cho bản một file và kiểm thử offline
+tools/
+  build-standalone.js   Đóng gói thành một file HTML
+  standalone/           Runtime điều hướng ?p= và CSS trang tài liệu của bản một file
+  qa/                   Kiểm tra tự động bằng Playwright (lỗi console, click-through, tương tác)
 ```
 
 Luồng dữ liệu một chiều: `mock-data → data-index → metrics → alerts → charts/ui`. Trang không tự tính số liệu; mọi công thức nằm trong `metrics.js`.
@@ -73,6 +86,8 @@ school: {
 
 Dữ liệu mock sinh tương đối theo `today` (16 tuần quanh hôm nay), nên đổi ngày vẫn có dữ liệu đầy đủ. Các kịch bản K01–K30 được tinh chỉnh với seed mặc định; seed khác vẫn chạy nhưng có thể có rule không phát sinh cảnh báo. Kiểm tra bằng `tests.html` hoặc chế độ debug.
 
+Sau khi sửa, chạy lại `node tools/build-standalone.js` để bản một file cập nhật theo.
+
 Cấu hình người dùng chỉnh ở trang Cấu hình lưu trong `localStorage` (`gt.hocvu.config.v1`); trạng thái cảnh báo lưu ở `gt.hocvu.alertState.v1`. Nút "Khôi phục mặc định" xóa cấu hình đã lưu.
 
 ## Chế độ debug
@@ -86,9 +101,29 @@ Thời gian sinh dữ liệu, dựng index và render luôn hiện ở chân m�
 
 Trong console có thể dùng trực tiếp `GT.D` (dữ liệu đã index), `GT.metrics`, `GT.alerts.run(GT.D, GT.config.get())`.
 
+## Đóng gói lại bản một file
+
+Sau khi sửa code hoặc tài liệu, chạy (Node ≥ 16, không cần cài thêm gì):
+
+```
+node tools/build-standalone.js
+```
+
+Script đọc thứ tự nạp script của `hoc-vu/*.html`, `index.html`, `tests.html`, nhúng `base.css`, mọi module `assets/js`, ECharts từ `vendor/`, dựng `README.md` + `docs/*.md` sang HTML và ghi ra `dist/GenieTeach-HocVu.html`. Link giữa các trang (`class.html?…`, `../docs/METRICS.md#…`) được đổi sang link nội bộ khi chạy, nên code trang không phải sửa gì.
+
 ## Kiểm thử
 
-Mở `tests.html`. Trang chạy các ca kiểm tra công thức (biên khoảng thời gian, loại "chưa điểm danh" khỏi mẫu số, học sinh học nhiều lớp, gộp có trọng số, cỡ mẫu tối thiểu, diễn giải nguyên nhân, gộp và chống trùng cảnh báo, nhất quán giữa các kỳ, mọi rule đều phát sinh, hiệu năng) và hiện kết quả đạt/không đạt.
+Mở `tests.html` (hoặc `?p=tests` trong bản một file). Trang chạy các ca kiểm tra công thức (biên khoảng thời gian, loại "chưa điểm danh" khỏi mẫu số, học sinh học nhiều lớp, gộp có trọng số, cỡ mẫu tối thiểu, diễn giải nguyên nhân, gộp và chống trùng cảnh báo, nhất quán giữa các kỳ, mọi rule đều phát sinh, hiệu năng) và hiện kết quả đạt/không đạt.
+
+Kiểm tra tự động trên trình duyệt thật (cần Playwright: `npm i -g playwright && npx playwright install chromium`). Thêm `--standalone` để chạy trên bản một file, khi đó mọi request mạng bị chặn:
+
+```
+node tools/qa/check-pages.js [--standalone]   # mọi trang: lỗi console, thời gian render, biểu đồ lỗi
+node tools/qa/crawl-links.js [--standalone]   # mọi link: đúng đích, giữ kỳ dữ liệu, mở không lỗi
+node tools/qa/interact.js [--standalone]      # đổi kỳ, bộ lọc, popup, CSV, cấu hình, cảnh báo, Đề xuất
+```
+
+Kết quả lần chạy gần nhất ghi trong `docs/ACCEPTANCE.md`.
 
 ## Ngoài phạm vi
 

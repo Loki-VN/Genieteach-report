@@ -150,13 +150,81 @@
     for (let i = 0; i < 7; i++) sum = M.addAttendance(sum, M.attendanceCounts(D, {}, w0 + i * DAY, w0 + (i + 1) * DAY));
     eq(sum.taken, week.taken, 'taken'); return eq(sum.NOT_TAKEN, week.NOT_TAKEN, 'NOT_TAKEN');
   });
-  test('Σ theo tuần trong tháng = số liệu tháng (nhiệm vụ, theo dueAt)', function () {
+  test('Σ theo ngày trong tháng = số liệu tháng (nhiệm vụ, theo dueAt)', function () {
     const D = GT.data.load();
     const m0 = DT.startOfMonth(D.meta.now - 20 * DAY), m1 = DT.addMonths(m0, 1);
     const month = M.taskCounts(D, {}, m0, m1);
     let on = 0, miss = 0;
     for (let t = m0; t < m1; t += DAY) { const c = M.taskCounts(D, {}, t, Math.min(t + DAY, m1)); on += c.ON_TIME; miss += c.MISSING; }
     eq(on, month.ON_TIME, 'ON_TIME'); return eq(miss, month.MISSING, 'MISSING');
+  });
+
+  // =================================================================== Kỳ dữ liệu — 4 chế độ (period.js)
+  section = 'Kỳ dữ liệu — 4 chế độ';
+  const P = GT.period;
+  const D0 = GT.data.load();
+  const sameCounts = function (a, b) {   // so chuyên cần + nhiệm vụ + buổi học của hai khoảng
+    const att = function (r) { const c = M.attendanceCounts(D0, {}, r.from, r.to); return [c.ON_TIME, c.LATE, c.EXCUSED, c.UNEXCUSED, c.NOT_TAKEN].join('/'); };
+    const tsk = function (r) { const c = M.taskCounts(D0, {}, r.from, r.to); return [c.ON_TIME, c.LATE, c.MISSING, c.OPEN].join('/'); };
+    eq(att(a), att(b), 'chuyên cần'); eq(tsk(a), tsk(b), 'nhiệm vụ');
+    return eq(M.sessionsIn(D0, {}, a.from, a.to).length, M.sessionsIn(D0, {}, b.from, b.to).length, 'số buổi');
+  };
+  test('Khoảng tùy chọn 28/09–04/10 = chế độ Tuần (chuyên cần, nhiệm vụ, số buổi)', function () {
+    const wk = P.range({ mode: 'week', date: DT.make(2026, 10, 1) }, NOW);
+    const cu = P.range({ mode: 'custom', date: NOW, from: DT.make(2026, 9, 28), to: DT.make(2026, 10, 4) }, NOW);
+    eq(cu.from, wk.from, 'from'); eq(cu.to, wk.to, 'to');
+    return sameCounts(cu, wk);
+  });
+  test('Σ các ngày của chế độ Ngày = chế độ Tuần (cùng tuần 28/09–04/10)', function () {
+    const wk = P.range({ mode: 'week', date: DT.make(2026, 9, 30) }, NOW);
+    let taken = 0, nt = 0, sess = 0;
+    P.buckets(wk.from, wk.to, 'day').forEach(function (b) {
+      const r = P.range({ mode: 'day', date: b.from }, NOW);
+      const c = M.attendanceCounts(D0, {}, r.from, r.to);
+      taken += c.taken; nt += c.NOT_TAKEN; sess += M.sessionsIn(D0, {}, r.from, r.to).length;
+    });
+    const w = M.attendanceCounts(D0, {}, wk.from, wk.to);
+    eq(taken, w.taken, 'taken'); eq(nt, w.NOT_TAKEN, 'NOT_TAKEN');
+    return eq(sess, M.sessionsIn(D0, {}, wk.from, wk.to).length, 'số buổi');
+  });
+  test('Σ các tuần (cắt theo biên tháng) = chế độ Tháng 9/2026', function () {
+    const mo = P.range({ mode: 'month', date: DT.make(2026, 9, 15) }, NOW);
+    const parts = P.buckets(mo.from, mo.to, 'week');
+    eq(parts[0].from, mo.from, 'tuần đầu bắt đầu đúng 01/09'); eq(parts[parts.length - 1].to, mo.to, 'tuần cuối kết thúc đúng 01/10');
+    let taken = 0, on = 0, miss = 0;
+    parts.forEach(function (b) { taken += M.attendanceCounts(D0, {}, b.from, b.to).taken; const t = M.taskCounts(D0, {}, b.from, b.to); on += t.ON_TIME; miss += t.MISSING; });
+    const t = M.taskCounts(D0, {}, mo.from, mo.to);
+    eq(taken, M.attendanceCounts(D0, {}, mo.from, mo.to).taken, 'taken'); eq(on, t.ON_TIME, 'ON_TIME');
+    return eq(miss, t.MISSING, 'MISSING');
+  });
+  test('Kỳ liền trước của Tháng 10/2026 = 01/09–30/09 (30 ngày)', function () {
+    const pv = P.previous({ mode: 'month', date: DT.make(2026, 10, 1) }, NOW);
+    eq(DT.fmtDate(pv.from), '01/09/2026', 'from'); eq(DT.fmtDate(pv.to), '01/10/2026', 'to (không gồm)');
+    return eq(pv.days, 30, 'số ngày');
+  });
+  test('Kỳ liền trước của Tháng 3/2026 = tháng 2 (28 ngày)', function () {
+    const pv = P.previous({ mode: 'month', date: DT.make(2026, 3, 31) }, NOW);
+    eq(DT.fmtDate(pv.from), '01/02/2026', 'from'); return eq(pv.days, 28, 'số ngày');
+  });
+  test('Kỳ liền trước của Tuần neo Chủ nhật 11/10 = tuần 28/09–04/10', function () {
+    const pv = P.previous({ mode: 'week', date: DT.make(2026, 10, 11) }, NOW);
+    eq(DT.fmtDate(pv.from), '28/09/2026', 'from'); return eq(DT.fmtDate(pv.to - DAY), '04/10/2026', 'ngày cuối');
+  });
+  test('Kỳ liền trước của Ngày Thứ Hai 05/10 = Chủ nhật 04/10', function () {
+    const pv = P.previous({ mode: 'day', date: DT.make(2026, 10, 5) }, NOW);
+    return eq(DT.fmtDate(pv.from), '04/10/2026');
+  });
+  test('Kỳ liền trước của Khoảng 21–30/09 = 10 ngày 11–20/09', function () {
+    const pv = P.previous({ mode: 'custom', date: NOW, from: DT.make(2026, 9, 21), to: DT.make(2026, 9, 30) }, NOW);
+    eq(DT.fmtDate(pv.from), '11/09/2026', 'from'); eq(DT.fmtDate(pv.to - DAY), '20/09/2026', 'ngày cuối');
+    return eq(pv.days, 10, 'số ngày');
+  });
+  test('Biên [from, to): buổi bắt đầu đúng 00:00 ngày sau thuộc ngày sau', function () {
+    const d = P.range({ mode: 'day', date: DT.make(2026, 10, 7) }, NOW);
+    const next = P.range({ mode: 'day', date: DT.make(2026, 10, 8) }, NOW);
+    eq(d.to, next.from, 'hai ngày liền kề không chồng nhau');
+    const leaked = M.sessionsIn(D0, {}, d.from, d.to).filter(function (s) { return s.start >= next.from; }).length;
+    return eq(leaked, 0, 'buổi của ngày sau lọt vào ngày trước');
   });
 
   // =================================================================== 4. Nhiệm vụ & khóa trực tuyến

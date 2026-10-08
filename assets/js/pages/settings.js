@@ -264,7 +264,7 @@
           el('td', { style: { minWidth: '220px' }, text: r.name }),
           el('td', {}, [sev]),
           el('td', {}, [params.childNodes.length ? params : el('span', { class: 'muted small', text: 'Dùng ngưỡng mục 3.6 / màu CĐR' })]),
-          el('td', { class: 'r' }, [el('a', { href: 'alerts.html' + GT.qs.build({ ruleId: r.id }), text: F.int(stats[r.id] ? stats[r.id].count : 0) })])
+          el('td', { class: 'r' }, [el('a', { href: GT.nav.carry('alerts.html' + GT.qs.build({ ruleId: r.id })), text: F.int(stats[r.id] ? stats[r.id].count : 0) })])
         ]));
       });
       root.appendChild(UI.card({

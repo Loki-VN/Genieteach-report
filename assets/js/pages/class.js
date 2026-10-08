@@ -1,7 +1,7 @@
 /**
  * hoc-vu/class.html — 4.6 Báo cáo lớp học (4 tab: Tổng quan · Chuyên cần · Bài về nhà · Phân tích học tập).
  * Chọn một lớp → báo cáo lớp. "Tất cả" hoặc một nhóm lớp → chế độ so sánh giữa lớp (OQ-45).
- * [SỬA SPEC] Filter khóa lấy mọi khóa của lớp; khóa trực tuyến nằm trong tab Bài về nhà (#online).
+ * [SỬA SPEC] Filter khóa lấy mọi khóa của lớp (SP-SS-03); khóa trực tuyến nằm trong tab Bài về nhà (#online, SP-SS-04).
  */
 (function (GT) {
   'use strict';
