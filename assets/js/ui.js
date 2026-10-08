@@ -617,7 +617,8 @@ window.GT = window.GT || {};
   UI.colorChip = function (color, text) {
     const m = GT.metrics.COLOR_META[color];
     const bg = m.color;
-    return '<span class="st-chip" style="background:' + bg + ';color:' + GT.colors.textOn(bg) + '" title="' + m.label + '">' + m.icon + ' ' + esc(text === undefined ? m.label : text) + '</span>';
+    const t = text === undefined ? m.label : String(text);
+    return '<span class="st-chip" style="background:' + bg + ';color:' + GT.colors.textOn(bg) + '" title="' + m.label + '">' + (t.indexOf(m.icon) === 0 ? '' : m.icon + ' ') + esc(t) + '</span>';
   };
   UI.levelChip = function (level, text) {
     const m = GT.metrics.LEVEL_META[level];

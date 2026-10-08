@@ -193,13 +193,13 @@ window.GT = window.GT || {};
       tooltip: tooltip({ trigger: 'item', formatter: function (p) { return row(p.color, p.name, F.pct(p.value / total) + ' · ' + F.int(p.value) + ' ' + (o.unit || 'lượt')); } }),
       legend: legend({ show: o.legend !== false }),
       series: [{
-        type: 'pie', radius: ['52%', '74%'], center: ['50%', o.legend === false ? '50%' : '44%'], padAngle: 1,
+        type: 'pie', radius: o.items.length > 4 ? ['46%', '66%'] : ['52%', '74%'], center: ['50%', o.legend === false ? '50%' : (o.items.length > 4 ? '42%' : '44%')], padAngle: 1,
         itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 3 },
         label: { color: C.ink2, fontSize: 12, formatter: function (p) { return p.value ? p.name + '\n' + F.pct(p.value / total) : ''; } },
         labelLine: { lineStyle: { color: C.axis } },
         data: o.items.map(function (x) { return { name: x.name, value: x.value, itemStyle: { color: x.color } }; })
       }].concat(o.center ? [{
-        type: 'pie', radius: [0, '40%'], center: ['50%', o.legend === false ? '50%' : '44%'], silent: true, tooltip: { show: false },
+        type: 'pie', radius: [0, '40%'], center: ['50%', o.legend === false ? '50%' : (o.items.length > 4 ? '42%' : '44%')], silent: true, tooltip: { show: false },
         itemStyle: { color: 'rgba(0,0,0,0)' }, labelLine: { show: false },
         label: { show: true, position: 'center', formatter: '{v|' + o.center.value + '}\n{l|' + o.center.label + '}',
           rich: { v: { fontSize: 22, fontWeight: 600, color: C.ink, lineHeight: 28, fontFamily: FONT }, l: { fontSize: 12, color: C.muted, lineHeight: 16, fontFamily: FONT } } },
@@ -252,7 +252,7 @@ window.GT = window.GT || {};
       yAxis: o.horizontal ? cAxis : vAxis,
       series: series
     });
-    if (o.horizontal) opt.__height = Math.max(180, n * 30 + 70);
+    if (o.horizontal) { opt.grid.bottom = o.series.length > 4 ? 62 : 40; opt.__height = Math.max(200, n * 30 + (o.series.length > 4 ? 110 : 80)); }
     if (o.dataZoom && n > o.dataZoom) {
       opt.dataZoom = [{ type: 'slider', height: 14, bottom: 26, start: 100 - Math.round(o.dataZoom / n * 100), end: 100, showDetail: false, borderColor: C.grid }];
       opt.grid.bottom = 64;
@@ -508,11 +508,11 @@ window.GT = window.GT || {};
     if (!pts.length) return { empty: o.empty };
     const xf = o.xFmt || function (v) { return F.num(v, 0); }, yf = o.yFmt || function (v) { return F.num(v, 1); };
     const ml = [];
-    if (o.xMid !== null && o.xMid !== undefined) ml.push({ xAxis: o.xMid, label: { formatter: o.xMidLabel || 'Trung vị', color: C.muted, fontSize: 11 } });
+    if (o.xMid !== null && o.xMid !== undefined) ml.push({ xAxis: o.xMid, label: { formatter: o.xMidLabel || 'Trung vị', color: C.muted, fontSize: 11, position: 'start' } });
     if (o.yMid !== null && o.yMid !== undefined) ml.push({ yAxis: o.yMid, label: { formatter: o.yMidLabel || 'Trung vị', color: C.muted, fontSize: 11 } });
     const graphics = [];
     if (o.quadrants) {
-      const pos = [{ left: 70, top: 10 }, { right: 24, top: 10 }, { left: 70, bottom: 48 }, { right: 24, bottom: 48 }];
+      const pos = [{ left: 70, top: 4 }, { right: 40, top: 4 }, { left: 70, bottom: 52 }, { right: 40, bottom: 52 }];
       o.quadrants.forEach(function (q, i) { if (q) graphics.push(Object.assign({ type: 'text', style: { text: q, fill: C.muted, font: '11.5px ' + FONT } }, pos[i])); });
     }
     return base({
@@ -525,7 +525,7 @@ window.GT = window.GT || {};
             (it.n !== undefined ? '<div style="color:' + C.muted + '">' + esc(o.nLabel || 'Mẫu') + ': ' + F.int(it.n) + '</div>' : '') + (it.extra || '');
         }
       }),
-      grid: { left: 12, right: 24, top: 30, bottom: 30, containLabel: true },
+      grid: { left: 12, right: o.gridRight || 40, top: 34, bottom: 30, containLabel: true },
       xAxis: valAxis(xf, { name: o.xName, nameLocation: 'middle', nameGap: 26, nameTextStyle: { color: C.ink2, fontSize: 12 }, scale: true, min: o.xMin, max: o.xMax }),
       yAxis: valAxis(yf, { name: o.yName, nameLocation: 'end', nameTextStyle: { color: C.ink2, fontSize: 12, align: 'left' }, scale: true, min: o.yMin, max: o.yMax }),
       series: [{
