@@ -60,6 +60,19 @@ window.GT = window.GT || {};
       if (o['#']) { hash = '#' + o['#']; delete o['#']; }
       return page + GT.qs.build(o) + hash;
     },
+    /**
+     * Link dựng sẵn (vd. drilldownUrl của cảnh báo): mang theo kỳ dữ liệu hiện tại (period/date/from/to)
+     * nếu link chưa tự đặt kỳ. Không mang filter lớp/nhóm vì link đã chỉ rõ đối tượng.
+     */
+    carry: function (url) {
+      if (!url || /^[a-z]+:|^\.\.\/|^#/i.test(url)) return url;
+      const m = /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(url);
+      const q = GT.qs.parse(m[2] || '');
+      if (q.period || q.date) return url;
+      const cur = GT.qs.parse();
+      ['period', 'date', 'from', 'to'].forEach(function (k) { if (cur[k]) q[k] = cur[k]; });
+      return m[1] + GT.qs.build(q) + (m[3] || '');
+    },
     /** Cập nhật query string của trang hiện tại và render lại (không tải lại trang nếu trình duyệt cho phép). */
     update: function (patch, opts) {
       const q = Object.assign(GT.qs.parse(), patch);
@@ -147,6 +160,7 @@ window.GT = window.GT || {};
     const ctx = { D: D, cfg: cfg, now: now, q: q, M: GT.metrics, A: GT.alerts, def: def };
     if (f.period) {
       ctx.period = GT.period.fromParams(q, f.period, now);
+      if (ctx.period.mode === 'custom' && !q.from && f.customFrom) ctx.period.from = DT.startOfDay(f.customFrom(D));
       ctx.range = GT.period.range(ctx.period, now);
       ctx.prev = GT.period.previous(ctx.period, now);
     }
@@ -569,7 +583,7 @@ window.GT = window.GT || {};
         items: ordered.map(function (x) {
           return { id: x.id, name: x.name, value: x.value === null || x.value === undefined ? null : x.value * K.scale, n: x.n, emph: !x.unranked && x.rank <= 5, unranked: x.unranked, note: x.unranked ? 'Chưa đủ mẫu để xếp hạng' : null, ref: x.ref === undefined || x.ref === null ? undefined : x.ref * K.scale };
         }),
-        fmt: function (v) { return K.fmt(v / K.scale); }, axisFmt: K.axisFmt, max: K.max,
+        fmt: function (v) { return K.fmt(v / K.scale); }, axisFmt: K.axisFmt, max: o.kind !== 'score' && o.kind !== 'score100' && o.higherIsBetter === false ? undefined : K.max,
         marks: marks.filter(function (m) { return m.value !== null && m.value !== undefined; }).map(function (m) { return { value: m.value * K.scale, label: m.label, color: m.color }; }),
         refLabel: 'TB nhóm lớp',
         valueLabel: o.metricLabel, unit: o.unit
@@ -592,10 +606,10 @@ window.GT = window.GT || {};
       if (!list.length) return;
       const g = el('div', { class: 'alert-group' }, [el('h4', {}, [UI.sevBadge(sev), el('span', { text: list.length + ' cảnh báo' })])]);
       list.slice(0, max).forEach(function (a) { g.appendChild(UI.alertItem(a)); });
-      if (list.length > max && o.moreHref) g.appendChild(el('a', { class: 'alert-more', href: o.moreHref + (o.moreHref.indexOf('?') >= 0 ? '&' : '?') + 'severity=' + sev, text: 'Xem thêm ' + (list.length - max) + ' cảnh báo mức ' + GT.alerts.SEVERITY[sev].label.toLowerCase() + ' →' }));
+      if (list.length > max && o.moreHref) g.appendChild(el('a', { class: 'alert-more', href: GT.nav.carry(o.moreHref + (o.moreHref.indexOf('?') >= 0 ? '&' : '?') + 'severity=' + sev), text: 'Xem thêm ' + (list.length - max) + ' cảnh báo mức ' + GT.alerts.SEVERITY[sev].label.toLowerCase() + ' →' }));
       body.appendChild(g);
     });
-    const tools = o.moreHref ? [el('a', { class: 'btn sm', href: o.moreHref, text: 'Xem tất cả (' + open.length + ')' })] : [];
+    const tools = o.moreHref ? [el('a', { class: 'btn sm', href: GT.nav.carry(o.moreHref), text: 'Xem tất cả (' + open.length + ')' })] : [];
     return UI.card({ title: o.title || 'Cảnh báo bất thường', question: o.question || 'Đối tượng nào đang vượt ngưỡng cảnh báo và cần Học vụ xử lý?', body: body, tools: tools, cls: o.cls, id: o.id, note: o.note });
   };
   UI.alertItem = function (a) {
@@ -603,7 +617,7 @@ window.GT = window.GT || {};
     return el('div', { class: 'alert-item' }, [
       el('span', { class: 'sev ' + a.severity, title: 'Mức ' + GT.alerts.SEVERITY[a.severity].label }, GT.alerts.SEVERITY[a.severity].icon),
       el('span', { class: 't' }, [a.title, a.children ? el('span', { class: 'muted small', text: ' (' + a.children.length + ' học sinh)' }) : null]),
-      el('a', { class: 'small nowrap', href: a.drilldownUrl, text: 'Chi tiết →' }),
+      el('a', { class: 'small nowrap', href: GT.nav.carry(a.drilldownUrl), text: 'Chi tiết →' }),
       el('div', { class: 'r' }, [a.reason, el('div', { class: 'meta', text: meta + (a.status !== 'NEW' ? ' · ' + GT.alerts.STATUS[a.status] : '') })])
     ]);
   };

@@ -307,8 +307,8 @@
     A.DISPLAY_GROUPS.forEach(function (g) {
       const list = open.filter(function (a) { return A.displayGroupOf(a) === g.id; });
       const c = A.countBySeverity(list);
-      tb.appendChild(el('tr', {}, [el('td', {}, [el('a', { href: 'alerts.html' + GT.qs.build({ displayGroup: g.id }), text: g.label })])].concat(A.SEVERITY_ORDER.map(function (s) {
-        return el('td', { class: 'r' }, [c[s] ? el('a', { href: 'alerts.html' + GT.qs.build({ displayGroup: g.id, severity: s }), text: F.int(c[s]) }) : el('span', { class: 'muted', text: '0' })]);
+      tb.appendChild(el('tr', {}, [el('td', {}, [el('a', { href: GT.nav.carry('alerts.html' + GT.qs.build({ displayGroup: g.id })), text: g.label })])].concat(A.SEVERITY_ORDER.map(function (s) {
+        return el('td', { class: 'r' }, [c[s] ? el('a', { href: GT.nav.carry('alerts.html' + GT.qs.build({ displayGroup: g.id, severity: s })), text: F.int(c[s]) }) : el('span', { class: 'muted', text: '0' })]);
       })).concat([el('td', { class: 'r' }, [el('b', { text: F.int(c.total) })])])));
     });
     t.appendChild(tb);
@@ -316,7 +316,7 @@
       title: 'Tóm tắt cảnh báo đang mở', proposal: true,
       question: 'Đang có bao nhiêu vấn đề cần xử lý, thuộc mảng nào, mức nào?',
       body: el('div', {}, [el('div', { class: 'tbl-wrap' }, [t]), el('p', { class: 'small muted', style: { margin: '8px 0 0' }, text: 'Tổng ' + open.length + ' cảnh báo đang mở (đã gộp theo lớp khi ≥ ' + ctx.cfg.alerts.groupMinStudents + ' học sinh cùng vi phạm).' })]),
-      tools: [el('a', { class: 'btn sm', href: 'alerts.html', text: 'Trung tâm cảnh báo' })]
+      tools: [el('a', { class: 'btn sm', href: GT.nav.carry('alerts.html'), text: 'Trung tâm cảnh báo' })]
     });
   }
 

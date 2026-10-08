@@ -143,6 +143,7 @@ Học sinh được giao = có ghi danh hiệu lực tại `Task.assignedAt`.
 | <a id="M-LO-10"></a>M-LO-10 | Tỉ lệ đúng theo câu hỏi | `isCorrect / số lượt` theo câu hỏi × lớp (QuestionAttempt). |
 | <a id="M-LO-11"></a>M-LO-11 | Xu hướng tỉ lệ đạt | Từ LOSnapshot theo tuần; gộp lớp: `Σ(passRate × withData) / Σ withData`. Ảnh chụp tính bằng ngưỡng **tại thời điểm chụp**. |
 | <a id="M-LO-12"></a>M-LO-12 | Thời lượng khóa đã qua | `(t − startAt) / (endAt − startAt)`, cấp khóa = TB các ClassCourse đang hoạt động. |
+| <a id="M-LO-13"></a>M-LO-13 | % đạt TB của lớp cho một CĐR | `TB(LOAchievement.percent)` của các học sinh trong sĩ số lớp tại `t` có dữ liệu CĐR đó (không trọng số theo số câu). Dùng làm mốc "TB lớp" ở Hồ sơ học sinh. Chưa ai có dữ liệu → `—`. |
 
 `LOAchievement.percent` trong mock = tỉ lệ trả lời đúng trên mọi lượt làm câu hỏi của CĐR đó (OQ-43).
 

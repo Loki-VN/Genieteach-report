@@ -280,12 +280,12 @@ window.GT = window.GT || {};
           if (it.n !== undefined) h += '<div style="color:' + C.muted + '">Mẫu số: ' + F.int(it.n) + ' ' + (o.unit || 'lượt') + '</div>';
           if (it.ref !== undefined && it.ref !== null) h += '<div style="color:' + C.muted + '">' + esc(o.refLabel || 'Mốc') + ': ' + fmt(it.ref) + '</div>';
           if (it.note) h += '<div style="color:' + C.muted + '">' + esc(it.note) + '</div>';
-          marks.forEach(function (m) { h += '<div style="color:' + C.muted + '">' + esc(m.label) + ': ' + fmt(m.value) + '</div>'; });
+          marks.forEach(function (m) { h += '<div style="color:' + C.muted + '">' + esc(m.label) + (/\d/.test(m.label) ? '' : ': ' + fmt(m.value)) + '</div>'; });
           return h;
         }
       }),
       grid: { left: 8, right: 70, top: marks.length ? 26 : 8, bottom: 8, containLabel: true },
-      xAxis: valAxis(o.axisFmt || fmt, Object.assign({ splitNumber: 4 }, max !== null ? { max: max } : {}, o.min !== undefined ? { min: o.min } : {})),
+      xAxis: valAxis(o.axisFmt || fmt, Object.assign({ splitNumber: 4 }, max !== null ? { max: max } : {}, max === 100 && !o.min ? { interval: 25 } : {}, o.min !== undefined ? { min: o.min } : {})),
       yAxis: catAxis(items.map(function (x) { return x.name; }), { inverse: true, axisLabel: { color: C.ink2, fontSize: 12, width: o.labelWidth || 110, overflow: 'truncate' } }),
       series: [{
         type: 'bar', barMaxWidth: 16, barCategoryGap: '35%',
@@ -298,7 +298,7 @@ window.GT = window.GT || {};
           symbol: 'none', silent: true,
           label: { show: true, position: 'start', formatter: function (p) { return p.name; }, color: C.ink2, fontSize: 11, distance: 2 },
           data: marks.map(function (m, i) {
-            return { name: m.label + ' ' + fmt(m.value), xAxis: m.value, lineStyle: { color: m.color || (i ? C.blue : C.brandDark), width: 1.5, type: 'solid' }, label: { position: 'start', distance: i % 2 ? 14 : 2 } };
+            return { name: /\d/.test(m.label) ? m.label : m.label + ' ' + fmt(m.value), xAxis: m.value, lineStyle: { color: m.color || (i ? C.blue : C.brandDark), width: 1.5, type: 'solid' }, label: { position: 'start', distance: i % 2 ? 14 : 2 } };
           })
         } : undefined
       }]

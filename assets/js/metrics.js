@@ -995,6 +995,14 @@ window.GT = window.GT || {};
     });
   };
 
+  /** M-LO-13 — % đạt trung bình của lớp cho một CĐR = TB(percent) của học sinh có dữ liệu (sĩ số tại t). */
+  M.loMeanPercent = function (D, classId, loId, t) {
+    const m = D.idx.achByClassLo.get(classId + '|' + loId);
+    const vals = [];
+    M.roster(D, classId, t).forEach(function (sid) { const a = m && m.get(sid); if (a && a.percent !== null && a.percent !== undefined) vals.push(a.percent); });
+    return S.mean(vals);
+  };
+
   /** Hồ sơ CĐR của một học sinh trong một lớp–khóa: số CĐR theo cấp + danh sách. */
   M.studentLoProfile = function (D, studentId, classId, courseId, cfg) {
     const rows = (D.idx.achByClassCourse.get(classId + '|' + courseId) || []).filter(function (a) { return a.studentId === studentId; });

@@ -220,3 +220,18 @@ Cỡ mẫu tối thiểu của spec áp cho rule tỉ lệ cấp lớp. Rule c�
 
 **OQ-54 — Rule ONL-S chỉ xét khóa đang chạy** [GIẢ ĐỊNH]
 ONL-S01/S02/S03 và ONL-C01 chỉ áp dụng cho khóa trực tuyến chưa đến hạn; khóa đã đóng được phản ánh qua tỉ lệ hoàn thành đúng hạn (ONL-C02, báo cáo Học ở nhà).
+
+## E. Giả định phát sinh ở Phase 4
+
+**OQ-55 — Kỳ mặc định của Hồ sơ học sinh** [GIẢ ĐỊNH]
+Hồ sơ học sinh mặc định xem kỳ "Khoảng" từ ngày đầu dữ liệu (22/06/2026) đến hôm nay, vì hồ sơ dùng cho họp phụ huynh/hội đồng cần cả quá trình; người dùng vẫn đổi được sang Ngày/Tuần/Tháng.
+
+**OQ-56 — Mốc "TB lớp" trong hồ sơ học sinh** [GIẢ ĐỊNH]
+So sánh % đạt CĐR của học sinh với TB không trọng số của % đạt các học sinh cùng lớp có dữ liệu (M-LO-13), có tính cả học sinh đang xem. Không dùng tỉ lệ đạt của lớp vì hồ sơ đặt cạnh nhau hai đại lượng cùng đơn vị (%).
+
+**OQ-57 — Phạm vi báo cáo vận hành giáo viên** [GIẢ ĐỊNH]
+Chỉ gồm hành vi giáo viên kiểm soát được: điểm danh đúng thời điểm, nộp báo cáo, giao và chấm nhiệm vụ. Kết quả học tập của lớp chỉ hiện để tham chiếu kèm lưu ý mục 3.6, không xếp hạng, không dùng từ đánh giá năng lực. Tắt toggle "Hiển thị báo cáo theo giáo viên" trong Cấu hình thì trang chỉ còn thông báo và menu vẫn giữ mục để người dùng biết vì sao bị ẩn.
+
+**OQ-58 — Danh mục biểu đồ** [GIẢ ĐỊNH]
+Bản thu nhỏ trong `chart-catalog.html` dựng lại bằng cùng builder của `charts.js` với dữ liệu mock thật, nhưng phạm vi rút gọn (ví dụ một lớp/khóa tiêu biểu) để trang vẫn dưới 1 giây. Ô chỉ số, bảng và thẻ HTML không có bản thu nhỏ biểu đồ.
+

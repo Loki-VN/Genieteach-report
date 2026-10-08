@@ -73,9 +73,9 @@
       const byStatus = {};
       Object.keys(A.STATUS).forEach(function (s) { byStatus[s] = all.filter(function (a) { return a.status === s; }).length; });
       root.appendChild(UI.kpis([
-        { label: 'Đang mở — mức Cao', value: F.int(cOpen.HIGH), sub: 'Cần xử lý trước', href: 'alerts.html' + GT.qs.build({ severity: 'HIGH' }) },
-        { label: 'Đang mở — mức Trung bình', value: F.int(cOpen.MEDIUM), href: 'alerts.html' + GT.qs.build({ severity: 'MEDIUM' }) },
-        { label: 'Đang mở — mức Thấp', value: F.int(cOpen.LOW), href: 'alerts.html' + GT.qs.build({ severity: 'LOW' }) },
+        { label: 'Đang mở — mức Cao', value: F.int(cOpen.HIGH), sub: 'Cần xử lý trước', href: GT.nav.href('alerts.html', { severity: 'HIGH' }) },
+        { label: 'Đang mở — mức Trung bình', value: F.int(cOpen.MEDIUM), href: GT.nav.href('alerts.html', { severity: 'MEDIUM' }) },
+        { label: 'Đang mở — mức Thấp', value: F.int(cOpen.LOW), href: GT.nav.href('alerts.html', { severity: 'LOW' }) },
         { label: 'Mới / Đang xử lý', value: F.int(byStatus.NEW) + ' / ' + F.int(byStatus.IN_PROGRESS), sub: 'Đã xử lý ' + F.int(byStatus.RESOLVED) + ' · Bỏ qua ' + F.int(byStatus.IGNORED) }
       ]));
 
@@ -105,7 +105,7 @@
                 '<div class="small muted">Gợi ý: ' + esc(a.suggestedAction) + '</div>';
               if (a.children && expanded.has(a.key)) {
                 h += '<ul class="small" style="margin:6px 0 0;padding-left:18px;max-height:220px;overflow:auto">' + a.children.map(function (c) {
-                  return '<li><a href="' + esc(c.drilldownUrl) + '">' + esc(c.studentId ? ctx.studentLabel(c.studentId) : entityLabel(ctx, c)) + '</a> — ' + esc(c.reason) + '</li>';
+                  return '<li><a href="' + esc(GT.nav.carry(c.drilldownUrl)) + '">' + esc(c.studentId ? ctx.studentLabel(c.studentId) : entityLabel(ctx, c)) + '</a> — ' + esc(c.reason) + '</li>';
                 }).join('') + '</ul>';
               }
               return h;
@@ -127,7 +127,7 @@
                 (a.updatedAt ? '<div class="muted small">Cập nhật ' + esc(new Date(a.updatedAt).toLocaleString('vi-VN')) + '</div>' : '');
             }
           },
-          { key: 'go', label: '', sort: false, csv: false, fmt: function (a) { return '<a class="btn sm" href="' + esc(a.drilldownUrl) + '">Chi tiết →</a>'; } }
+          { key: 'go', label: '', sort: false, csv: false, fmt: function (a) { return '<a class="btn sm" href="' + esc(GT.nav.carry(a.drilldownUrl)) + '">Chi tiết →</a>'; } }
         ],
         rows: list, sort: { key: 'sev', dir: 1 }, capped: true, maxHeight: '75vh', csv: 'canh-bao.csv', empty: 'Không có cảnh báo nào khớp bộ lọc.',
         footNote: 'Sắp xếp mặc định: mức (Cao → Thấp) rồi thời điểm phát hiện mới nhất'

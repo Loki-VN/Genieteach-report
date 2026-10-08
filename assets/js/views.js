@@ -99,14 +99,14 @@ window.GT = window.GT || {};
           return { id: x.id, name: x.name, value: x.value === null ? null : x.value * K.scale, n: x.n, emph: !x.unranked && x.rank <= 5, unranked: x.unranked,
             ref: x.ref === null || x.ref === undefined ? undefined : x.ref * K.scale, note: x.unranked ? 'Chưa đủ ' + minS + ' ' + m.unit + ' — không xếp hạng' : null };
         }),
-        fmt: function (v) { return K.fmt(v / K.scale); }, axisFmt: K.axisFmt, max: K.max,
+        fmt: function (v) { return K.fmt(v / K.scale); }, axisFmt: K.axisFmt, max: m.kind === 'rate' && !m.higher ? undefined : K.max,
         marks: res.school === null ? [] : [{ value: res.school * K.scale, label: 'TB trường' }].concat(res.groupAvg !== null ? [{ value: res.groupAvg * K.scale, label: 'TB nhóm', color: GT.colors.blue }] : []),
         refLabel: 'TB nhóm lớp của lớp', valueLabel: m.label, unit: m.unit, empty: { title: 'Không có dữ liệu', text: 'Không có lớp nào có dữ liệu trong ' + (o.windowLabel || 'kỳ này') + '.' }
       });
     }, { height: 240, onClick: function (p) { const it = ordered[p.dataIndex]; if (it) pick(it); } });
     // [ĐX] Top 5 cao nhất & thấp nhất
     const ranked = ordered.filter(function (x) { return !x.unranked; });
-    if (o.topLow !== false && ranked.length >= 2) {
+    if (o.topLow !== false && ranked.length >= 6) {
       const best = ranked.slice(0, 5);
       const worst = ranked.slice(-5).reverse();
       const list = function (title, arr, cls) {
@@ -174,7 +174,7 @@ window.GT = window.GT || {};
         build: function () {
           return GT.charts.rankBar({
             items: ordered.map(function (x) { return { id: x.id, name: x.name, value: x.value === null ? null : x.value * K.scale, n: x.n, emph: !x.unranked && x.rank === 1, unranked: x.unranked, color: x.unranked ? null : GT.colors.group[x.id] }; }),
-            fmt: function (v) { return K.fmt(v / K.scale); }, axisFmt: K.axisFmt, max: K.max, labelWidth: 150,
+            fmt: function (v) { return K.fmt(v / K.scale); }, axisFmt: K.axisFmt, max: m.kind === 'rate' && !m.higher ? undefined : K.max, labelWidth: 150,
             marks: res.school === null ? [] : [{ value: res.school * K.scale, label: 'TB trường' }], valueLabel: m.label, unit: m.unit
           });
         },

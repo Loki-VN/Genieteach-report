@@ -32,7 +32,7 @@ Quy ước kỹ thuật:
 
 - HTML5 + CSS + JS thuần, `<script>` thường, global `window.GT`, mở được qua `file://`. Không module, không build step.
 - ECharts **5.5.0** qua CDN pin version: `https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js`.
-- Thứ tự nạp mỗi trang: `echarts (CDN) → config → util → mock-data → data-index → metrics → alerts → period → charts → ui → catalog (chỉ chart-catalog) → pages/<trang>.js`.
+- Thứ tự nạp mỗi trang: `echarts (CDN) → config → util → mock-data → data-index → metrics → alerts → period → charts → ui → views → catalog (chỉ chart-catalog) → pages/<trang>.js`.
 - **Thời gian**: mọi mốc thời gian là số ms biểu diễn **giờ tường Việt Nam mã hóa theo UTC** (`Date.UTC(...)`, chỉ dùng `getUTC*`). Tránh lệch giờ/DST khi người xem ở múi giờ khác. Tuần bắt đầu Thứ Hai.
 - **Hiệu năng** (ngân sách mỗi trang < 1 giây): sinh dữ liệu + index ≈ 150–300 ms; chạy rule engine ≈ 100–200 ms (memo); render trang ≈ 200–400 ms. Biểu đồ dưới màn hình đầu được khởi tạo lười (IntersectionObserver). Footer hiện "Render trong X ms" để kiểm tra nghiệm thu.
 - **Cache metric**: `GT.metrics.memo(key, fn)`, khóa = tên metric + JSON(scope đã chuẩn hóa: id sắp xếp) + `from|to` + version cấu hình.
