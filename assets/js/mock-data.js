@@ -444,8 +444,8 @@ window.GT = window.GT || {};
         if (u < 0.75) return rOps.uniform(120, 600);
         return null;
       }
-      if (u < 0.86) return rOps.uniform(-5, 12);
-      if (u < 0.955) return rOps.uniform(16, 60);
+      if (u < 0.9) return rOps.uniform(-8, 10);
+      if (u < 0.97) return rOps.uniform(16, 60);
       if (u < 0.994) return rOps.uniform(90, 480);
       return null;
     }

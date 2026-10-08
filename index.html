@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GenieTeach · Báo cáo Học vụ</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <style>
+    .hero { background: var(--brand-dark); color: #fff; padding: 28px 24px 24px; }
+    .hero .wrap, .page { max-width: 1180px; margin: 0 auto; }
+    .hero h1 { font-size: 26px; }
+    .hero p { margin: 6px 0 0; opacity: .88; max-width: 820px; }
+    .hero .meta { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .hero .meta span { background: rgba(255,255,255,.14); border-radius: 999px; padding: 3px 12px; font-size: 12.5px; }
+    .page { padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 20px; }
+    .reports { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    .report { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; color: var(--ink); box-shadow: var(--shadow); }
+    .report:hover { border-color: var(--brand); text-decoration: none; }
+    .report h3 { font-size: 15.5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .report p { margin: 0; font-size: 13px; color: var(--ink-2); }
+    .report .q { font-size: 12.5px; color: var(--ink-3); }
+    .roles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .toggle input { width: 18px; height: 18px; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <h1>GenieTeach — Báo cáo Học vụ</h1>
+      <p>Prototype hệ thống báo cáo dành cho phòng Đào tạo / Giáo vụ: giám sát hoạt động dạy và học của toàn bộ học sinh, giáo viên và lớp học. Trả lời ba câu hỏi: hôm nay vận hành có trơn tru không · lớp/nhóm lớp nào đang có vấn đề · vấn đề nằm ở lớp học hay ở chương trình.</p>
+      <div class="meta" id="meta"><span>Dữ liệu mô phỏng</span></div>
+    </div>
+  </header>
+  <main class="page">
+    <section class="card">
+      <div class="card-head"><h3>Vai trò</h3></div>
+      <div class="roles">
+        <div class="seg" role="group" aria-label="Vai trò">
+          <button type="button" class="on" aria-pressed="true">Học vụ</button>
+          <button type="button" disabled title="Repo chưa có bộ báo cáo Giáo viên">Giáo viên (chưa có)</button>
+        </div>
+        <span class="small muted">Repo chưa có bộ báo cáo dành cho Giáo viên nên chỉ có vai trò Học vụ (OQ-01). <code>metrics.js</code> / <code>alerts.js</code> đã thiết kế để dùng chung khi bổ sung.</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Hạng mục Đề xuất</h3></div>
+      <label class="toggle"><input type="checkbox" id="prop"> Hiển thị các biểu đồ, chỉ số và trang được đánh dấu <span class="badge proposal">Đề xuất</span></label>
+      <p class="small muted" style="margin:6px 0 0">Tắt để xem đúng phạm vi spec gốc (áp dụng cho mọi trang, lưu trong trình duyệt này). Các hạng mục spec gốc và [SỬA SPEC] luôn hiển thị.</p>
+    </section>
+
+    <section>
+      <div class="section-title" style="margin-bottom:10px"><h2>Báo cáo</h2><span class="muted">Mọi trang giữ kỳ dữ liệu và bộ lọc khi chuyển qua lại</span></div>
+      <div class="reports" id="reports"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Tài liệu & kiểm thử</h3></div>
+      <ul style="margin:4px 0 0;padding-left:18px;line-height:1.9">
+        <li><a href="docs/PLAN.md">PLAN.md</a> — kế hoạch, cây file, data model, danh sách biểu đồ</li>
+        <li><a href="docs/METRICS.md">METRICS.md</a> — định nghĩa duy nhất của mọi chỉ số</li>
+        <li><a href="docs/ALERTS.md">ALERTS.md</a> — danh mục quy tắc cảnh báo</li>
+        <li><a href="docs/OPEN-QUESTIONS.md">OPEN-QUESTIONS.md</a> — giả định, sửa spec, câu hỏi mở</li>
+        <li><a href="tests.html">tests.html</a> — bộ kiểm thử điểm biên và tích hợp (thêm <code>?debug=1</code> để in bảng kịch bản → rule)</li>
+        <li><a href="hoc-vu/chart-catalog.html">Danh mục biểu đồ</a> — mô tả từng biểu đồ cho đội dev</li>
+      </ul>
+    </section>
+  </main>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/util.js"></script>
+  <script>
+    (function () {
+      var KEY = 'gt.ui.showProposals';
+      var REPORTS = [
+        ['overview', 'Tổng quan', 'Sức khỏe vận hành hôm nay, xếp hạng lớp, nhóm lớp, bảng vận hành, tóm tắt cảnh báo.', 'Hôm nay vận hành có trơn tru không?'],
+        ['attendance', 'Chuyên cần', 'Đúng giờ, muộn, vắng có/không phép theo kỳ; calendar heatmap; học sinh vắng triền miên.', 'Vắng là rải rác hay tập trung?'],
+        ['homework', 'Học ở nhà', 'Nhiệm vụ và khóa trực tuyến: đúng hạn, điểm, tiến độ thực tế vs kỳ vọng, nhiệm vụ bất thường.', 'Lớp nào làm đủ nhưng điểm thấp?'],
+        ['courses', 'Khóa học', 'Phân bố 6 mức chuẩn đầu ra theo khóa; chuẩn đầu ra yếu nhất toàn trường.', 'Khóa nào có nhiều chuẩn đầu ra kém?'],
+        ['course-detail', 'Phân tích khóa học', 'Heatmap lớp × chuẩn đầu ra, diễn giải nguyên nhân, phân tích câu hỏi.', 'Vấn đề ở lớp học hay chương trình?'],
+        ['schedule', 'Lịch học', 'Điểm danh trước buổi, báo cáo sau buổi, độ trễ, danh sách buổi học.', 'Giáo viên có điểm danh/báo cáo đúng lúc không?'],
+        ['class', 'Lớp học', '4 tab: Tổng quan · Chuyên cần · Bài về nhà · Phân tích học tập; benchmark với nhóm/trường.', 'Lớp này tốt hay kém so với ai?'],
+        ['teachers', 'Vận hành giáo viên', 'Chỉ hành vi vận hành: điểm danh, báo cáo, giao và chấm nhiệm vụ.', 'Buổi nào còn thiếu điểm danh/báo cáo?', true],
+        ['student', 'Hồ sơ học sinh', 'Tổng hợp một học sinh trên mọi lớp; có bản in.', 'Học sinh này đang gặp khó ở đâu?', true],
+        ['alerts', 'Trung tâm cảnh báo', 'Hàng đợi xử lý cảnh báo: lọc, gộp, trạng thái, ghi chú.', 'Cần xử lý gì trước?', true],
+        ['settings', 'Cấu hình cấp trường', 'Ngưỡng màu chuẩn đầu ra, khóa học, quy tắc cảnh báo, diễn giải nguyên nhân.', 'Đổi ngưỡng thì cảnh báo thay đổi ra sao?'],
+        ['chart-catalog', 'Danh mục biểu đồ', 'Mỗi biểu đồ: dữ liệu, công thức, câu hỏi nghiệp vụ, lý do chọn loại biểu đồ.', 'Biểu đồ này dùng để làm gì?']
+      ];
+      var box = document.getElementById('reports');
+      var cfg = GT.config.get();
+      REPORTS.forEach(function (r) {
+        if (r[0] === 'teachers' && !cfg.display.showTeacherReport) return;
+        var a = document.createElement('a');
+        a.className = 'report'; a.href = 'hoc-vu/' + r[0] + '.html';
+        if (r[4]) a.setAttribute('data-proposal', '');
+        a.innerHTML = '<h3>' + GT.util.escapeHtml(r[1]) + (r[4] ? ' <span class="badge proposal">Đề xuất</span>' : '') + '</h3><p>' + GT.util.escapeHtml(r[2]) + '</p><span class="q">' + GT.util.escapeHtml(r[3]) + '</span>';
+        box.appendChild(a);
+      });
+      var cb = document.getElementById('prop');
+      var on = GT.store.get(KEY, true) !== false;
+      cb.checked = on;
+      document.body.classList.toggle('hide-proposals', !on);
+      cb.addEventListener('change', function () { GT.store.set(KEY, cb.checked); document.body.classList.toggle('hide-proposals', !cb.checked); });
+      var meta = document.getElementById('meta');
+      var now = GT.date.parseDate(cfg.school.today) + GT.date.parseTime(cfg.school.now);
+      [cfg.school.name, 'Hôm nay: ' + GT.date.fmtLongDate(now) + ' · ' + cfg.school.now, 'Seed ' + cfg.school.seed].forEach(function (t) {
+        var s = document.createElement('span'); s.textContent = t; meta.appendChild(s);
+      });
+    })();
+  </script>
+</body>
+</html>

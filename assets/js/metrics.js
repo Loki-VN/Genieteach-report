@@ -1037,12 +1037,12 @@ window.GT = window.GT || {};
     });
   };
   M.KEY_METRICS = [
-    { key: 'present', label: 'Tỉ lệ có mặt', kind: 'rate', ref: 'M-ATT-07' },
-    { key: 'taskOnTime', label: 'Tỉ lệ nộp đúng hạn', kind: 'rate', ref: 'M-HW-02' },
-    { key: 'taskScore', label: 'Điểm TB nhiệm vụ', kind: 'score', ref: 'M-HW-07' },
-    { key: 'onlineOnTime', label: 'Hoàn thành khóa TT đúng hạn', kind: 'rate', ref: 'M-ONL-05' },
-    { key: 'loGreen', label: '% chuẩn đầu ra Xanh', kind: 'rate', ref: 'M-LO-08' },
-    { key: 'reported', label: 'Tỉ lệ buổi đã báo cáo', kind: 'rate', ref: 'M-OPS-04' }
+    { key: 'present', label: 'Tỉ lệ có mặt', short: 'Có mặt', kind: 'rate', ref: 'M-ATT-07' },
+    { key: 'taskOnTime', label: 'Tỉ lệ nộp đúng hạn', short: 'Nộp đúng hạn', kind: 'rate', ref: 'M-HW-02' },
+    { key: 'taskScore', label: 'Điểm TB nhiệm vụ', short: 'Điểm TB nhiệm vụ', kind: 'score', ref: 'M-HW-07' },
+    { key: 'onlineOnTime', label: 'Hoàn thành khóa TT đúng hạn', short: 'Hoàn thành khóa TT', kind: 'rate', ref: 'M-ONL-05' },
+    { key: 'loGreen', label: '% chuẩn đầu ra Xanh', short: '% CĐR Xanh', kind: 'rate', ref: 'M-LO-08' },
+    { key: 'reported', label: 'Tỉ lệ buổi đã báo cáo', short: 'Buổi đã báo cáo', kind: 'rate', ref: 'M-OPS-04' }
   ];
   /** M-BM-02 — Độ lệch so với trường, quy về điểm % (điểm thang 10 × 10). */
   M.deviationPts = function (kind, v, base) {

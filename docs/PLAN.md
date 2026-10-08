@@ -40,7 +40,10 @@ Quy ước kỹ thuật:
 - **Màu**: thương hiệu tím `#A878D8`, tím đậm `#5B3E8C`, tím nhạt `#F2EBFA`, xanh dương `#0098F0`; trạng thái Xanh `#22A06B` / Cam `#F59E0B` / Đỏ `#E5484D` / Xám `#B0B4BA`; 6 mức chuẩn đầu ra; 5 trạng thái điểm danh (đúng mã màu trong spec). Mọi ô màu đều có nhãn chữ hoặc ký hiệu: trạng thái `✓ Xanh`, `! Cam`, `✕ Đỏ`, `– Xám`; điểm danh `Đ / M / P / K / ?`; cấp chuẩn đầu ra `RT / T / TB / CCT / CT / –`.
 - **Hạng mục [ĐỀ XUẤT]**: phần tử mang thuộc tính `data-proposal` + badge "Đề xuất". Toggle ẩn/hiện ở `index.html`, lưu `localStorage` (cấp người xem), áp dụng mọi trang.
 - Responsive ≥ 1280px (menu trái) và 768px (menu thu gọn); bảng rộng cuộn ngang trong container riêng.
-- Font: "Be Vietnam Pro" (Google Fonts) có fallback hệ thống. Khi demo offline, font tự lùi về font hệ thống.
+- Font: font hệ thống (`system-ui`, ưu tiên "Be Vietnam Pro" nếu máy đã cài). Không nạp Google Fonts để tránh lỗi console khi demo offline.
+- Bảng màu phân loại (nhóm lớp, nhiều series): `#0098F0 · #8B5CC4 · #e87ba4 · #1c5cab` — đã chạy validator (ΔE CVD ≥ 8, normal-vision ≥ 15; hồng dưới 3:1 nên luôn có nhãn + chế độ Bảng). Màu theo thực thể (nhóm lớp giữ màu cố định), không theo thứ hạng. Không dùng biểu đồ 2 trục y.
+- Mỗi thẻ biểu đồ có nút **Bảng** (bản tương đương không phụ thuộc màu) và CSV.
+- Chỉ chế độ sáng (spec không yêu cầu dark mode).
 
 ---
 
@@ -74,7 +77,8 @@ assets/
     ├── alerts.js              # GT.alerts (rule catalog, engine, dedupe, group, store)
     ├── period.js              # GT.period
     ├── charts.js              # GT.charts
-    ├── ui.js                  # GT.ui, GT.nav
+    ├── ui.js                  # GT.ui, GT.nav, GT.page (khung trang, component)
+    ├── views.js               # GT.views — thành phần dùng chung nhiều trang (xếp hạng lớp, popup so sánh, trạng thái buổi)
     ├── catalog.js             # GT.catalog (metadata mọi biểu đồ, dùng cho chart-catalog)
     └── pages/
         ├── overview.js  attendance.js  homework.js  courses.js  course-detail.js
@@ -319,7 +323,7 @@ Ký hiệu nhãn: **SG** = Spec gốc · **ĐX** = Đề xuất · **LS** = Cầ
 | HW-05 | Cảnh báo HW + ONL | Khối cảnh báo | SG |
 | HW-06 | Điểm nhiệm vụ theo lớp (hoặc nhóm khi "tất cả") | Boxplot | ĐX |
 | HW-07 | Lớp: % nộp đúng hạn × điểm TB, 4 góc phần tư theo trung vị | Scatter | ĐX |
-| HW-08 | Xu hướng tuần: % đúng hạn & điểm TB trường + line từng nhóm | Line 2 trục | ĐX |
+| HW-08 | Xu hướng tuần: % đúng hạn và điểm TB (2 biểu đồ cạnh nhau, mỗi biểu đồ 1 trục) + line từng nhóm | Line ×2 (không dùng 2 trục y) | ĐX |
 | HW-09 | Funnel khóa TT (lọc khóa) | Funnel | ĐX |
 | HW-10 | Tiến độ thực tế vs kỳ vọng theo lớp, từng khóa TT đang chạy | Bar ngang + vạch kỳ vọng | ĐX |
 | HW-11 | Nhiệm vụ bất thường (so với nhiệm vụ cùng khóa) | Bảng + CSV | ĐX |
