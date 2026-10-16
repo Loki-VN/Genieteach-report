@@ -16,7 +16,7 @@ from selectolax.lexbor import LexborHTMLParser as HTMLParser
 
 from ..classify import classify_subjects, delivery_mode
 from ..http import FetchError, PoliteClient
-from ..normalize import (clean_text, extract_emails, extract_phones, extract_tax_codes, fold, host_of,
+from ..normalize import (SURNAMES, clean_text, extract_emails, extract_phones, extract_tax_codes, fold, host_of,
                          is_role_email, normalize_facebook_url, normalize_phone)
 from ..scale import Claim, extract_claims, extract_founded_year
 
@@ -46,10 +46,7 @@ _PERSON = re.compile(
 )
 # Họ phổ biến: tên không có kính ngữ thì phải bắt đầu bằng một họ để tránh bắt nhầm
 # "Đồng sáng lập Apollo English", "Hiệu trưởng Trường Phổ thông"…
-_SURNAMES = set("""nguyen tran le pham hoang huynh phan vu vo dang bui do ho ngo duong ly dao doan vuong trinh
-truong lam phung mai to ha cao ta luong dinh chu kieu thai luu la quach tu trieu nghiem tang chau khuc mac au than
-kim lai tong doan dam dong bach hua giang tieu nong lo luc hau diep phuong quan ninh ong la vi han cu sam ton
-khong lang yen thach chung cong hong ung""".split())
+_SURNAMES = SURNAMES
 _NOT_NAME = re.compile(r"^(truong|trung|cong|nhom|he|hoc|anh|tieng|tap|to|vien|so|phong|ban)\b")
 _DATE_DMY = re.compile(r"(?<!\d)(\d{1,2})[/.\-](\d{1,2})[/.\-]((?:20)\d{2})(?!\d)")
 _DATE_ISO = re.compile(r"(?<!\d)(20\d{2})-(\d{2})-(\d{2})")

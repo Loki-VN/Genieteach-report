@@ -28,11 +28,18 @@ def clean_text(text: str | None) -> str:
 
 # Từ chung không mang tính thương hiệu, bỏ đi khi so khớp tên (fuzzy).
 _GENERIC = (
-    "cong ty co phan|cong ty tnhh|cong ty|tnhh|co phan|mtv|mot thanh vien|"
-    "trung tam|ngoai ngu|tin hoc|anh ngu|tieng anh|giao duc|dao tao|he thong|"
+    "cong ty co phan|cong ty tnhh|cong ty|tnhh|co phan|mtv|mot thanh vien|cty|"
+    "trung tam|ngoai ngu|tin hoc|anh ngu|tieng anh|giao duc|dao tao|he thong|quoc te|"
     "co so|chi nhanh|cs\\d+|education|edu|academy|english|center|centre|school|"
+    "ho kinh doanh|hkd|ca nhan|day them|hoc them|on luyen|boi duong|kien thuc|van hoa|"
+    "ky nang song|ki nang song|ky nang|kns|gdkns|nnth|tt|"
     "va|and|tai|ha noi|tp hcm|ho chi minh"
 )
+# Họ phổ biến (dùng nhận diện tên người: liên hệ trên website, hộ kinh doanh đứng tên cá nhân)
+SURNAMES = frozenset("""nguyen tran le pham hoang huynh phan vu vo dang bui do ho ngo duong ly dao doan vuong trinh
+truong lam phung mai to ha cao ta luong dinh chu kieu thai luu la quach tu trieu nghiem tang chau khuc mac au than
+kim lai tong doan dam dong bach hua giang tieu nong lo luc hau diep phuong quan ninh ong la vi han cu sam ton
+khong lang yen thach chung cong hong ung""".split())
 _GENERIC_RE = re.compile(rf"\b(?:{_GENERIC})\b")
 
 

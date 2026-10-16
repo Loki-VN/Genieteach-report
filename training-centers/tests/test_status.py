@@ -27,3 +27,13 @@ def test_places_closed_without_recent_positive():
 def test_unknown_and_evidence():
     status, evidence = decide_status(StatusSignals(website_alive=False), today=TODAY)
     assert status == "unknown" and "website" in evidence
+
+
+def test_expired_license_is_not_a_positive_signal():
+    from datetime import date
+
+    from tcpipe.status import StatusSignals, decide_status
+
+    s = StatusSignals(license_state="listed", license_list_date=date(2026, 6, 1), license_expiry=date(2025, 7, 19))
+    status, ev = decide_status(s, 12, date(2026, 10, 16))
+    assert status == "unknown" and "hết hạn 2025-07-19" in ev

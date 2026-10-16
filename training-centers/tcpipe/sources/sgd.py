@@ -10,6 +10,7 @@ import logging
 import re
 import zipfile
 from dataclasses import asdict, dataclass, field
+from datetime import date as _date
 from urllib.parse import urljoin, urlsplit
 
 from selectolax.lexbor import LexborHTMLParser as HTMLParser
@@ -40,7 +41,7 @@ COLUMNS: list[tuple[str, tuple[str, ...]]] = [
                            "chu dau tu", "don vi thanh lap", "ten doanh nghiep", "phap nhan")),
     ("director_name", ("giam doc", "nguoi dung dau", "nguoi dai dien", "ho ten", "ho va ten")),
     ("phone", ("dien thoai", "sdt", "so dt", "hotline", "=lien he")),
-    ("license_date", ("ngay cap", "ngay ky", "ngay quyet dinh", "thoi gian cap phep", "ngay cho phep")),
+    ("license_date", ("ngay cap", "ngay ky", "ngay quyet dinh", "thoi gian cap phep", "ngay cho phep", "ngay qd")),
     ("license_number", ("qd cap phep", "quyet dinh", "so qd", "giay phep", "so hieu", "=qd", "van ban cap phep")),
     ("address_raw", ("dia chi", "dia diem", "tru so", "noi dat")),
     ("tax_code", ("ma so thue", "=mst", "ma so doanh nghiep", "ma so dang ky", "ma so dk")),
@@ -53,6 +54,7 @@ COLUMNS: list[tuple[str, tuple[str, ...]]] = [
 ]
 _LICENSE_NO = re.compile(r"(\d{1,6})\s*/\s*((?:Q[\u0110D]|GCN|GP|CN)[\w\-/&]*)", re.I)
 _DATE = re.compile(r"(\d{1,2})\s*[/.\-]\s*(\d{1,2})\s*[/.\-]\s*((?:19|20)\d{2})")
+_ISO_DATE = re.compile(r"\b((?:19|20)\d{2})-(\d{2})-(\d{2})\b")
 
 
 def _cell_matches(folded: str, word: str) -> bool:
@@ -236,9 +238,16 @@ def parse_license(text: str | None) -> tuple[str | None, str | None]:
         return None, None
     m = _LICENSE_NO.search(re.sub(r"\s*-\s*", "-", text))   # "1170/QĐ- UBND" → "1170/QĐ-UBND"
     number = f"{m.group(1)}/{m.group(2)}" if m else None
-    d = _DATE.search(text)
-    date = f"{d.group(3)}-{int(d.group(2)):02d}-{int(d.group(1)):02d}" if d else None
-    return number, date
+    found = [_valid_date(d.group(3), d.group(2), d.group(1)) for d in _DATE.finditer(text)]
+    found += [_valid_date(*d.groups()) for d in _ISO_DATE.finditer(text)]       # ô Excel kiểu ngày
+    return number, next((d for d in found if d), None)
+
+
+def _valid_date(y: str, m: str, d: str) -> str | None:
+    try:
+        return _date(int(y), int(m), int(d)).isoformat()
+    except ValueError:                       # "31/13/2024", nhập sai
+        return None
 
 
 _STATUS_IN_CELL = [
@@ -259,6 +268,9 @@ def _split_director(text: str | None) -> tuple[str | None, str | None]:
 _OUT_OF_SCOPE = re.compile(r"tu van du hoc|van phong dai dien|du hoc|giao duc hoa nhap|ho tro phat trien giao duc|"
                            r"nhom tre|mam non|mau giao")
 _SECTION = re.compile(r"^(?:[ivx]{1,4}|[a-e]|phan\s+[ivx\d]+|phu luc\s*[ivx\d]*)\s*[.:\-)/]?\s+\S|^danh sach\b")
+
+
+_WORKPLACE = re.compile(r"(gv|giao vien)\b|truong (mam non|mn|tieu hoc|th|thcs|thpt|ptdtnt|pt)\b")
 
 
 def _section_of(rows: list[list[str]]) -> str | None:
@@ -296,6 +308,9 @@ def rows_to_records(rows: list[list[str]], source_url: str, province_code: str,
         name = values.get("center_name")
         if not name or fold(name) in ("ten trung tam", "(2)", "2") or re.fullmatch(r"\(?\d+\)?", name):
             continue
+        if values.get("director_name") and _WORKPLACE.match(fold(name)):
+            # bảng "Họ và tên | Đơn vị (công tác) | ĐT" của giáo viên đăng ký dạy thêm: cơ sở là người dạy
+            values["workplace"], name = name, f"Cá nhân dạy thêm {values['director_name']}"
         number, date = parse_license(values.get("license_number"))
         number2, date2 = parse_license(values.get("license_date"))
         number = number or number2
@@ -322,6 +337,7 @@ def rows_to_records(rows: list[list[str]], source_url: str, province_code: str,
         rec.extra.update({k: v for k, v in {
             "section": section, "website": values.get("website"), "center_type": values.get("center_type"),
             "license_expiry": values.get("license_expiry"), "tax_code": values.get("tax_code"),
+            "workplace": values.get("workplace"),
             "other_columns": others or None}.items() if v})
         records.append(rec)
     return records, meta

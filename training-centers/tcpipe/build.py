@@ -23,8 +23,9 @@ from rapidfuzz import fuzz, process
 from .admin_units import normalize_address, province_by_code, strip_location_suffix
 from .classify import CATEGORY_LABELS, classify_subjects
 from .crawl import domain_matches_brand, email_domain
-from .normalize import clean_text, fold, is_mobile, is_role_email, name_key, normalize_phone, website_domain
+from .normalize import SURNAMES, clean_text, fold, is_mobile, is_role_email, name_key, normalize_phone, website_domain
 from .scale import Claim, estimate_scale
+from .sources.sgd import parse_license
 from .status import StatusSignals, decide_status
 
 _BRANCH_SUFFIX = re.compile(r"\s*[-–(,]?\s*\b(chi nhanh|co so|cs)\b.*$")
@@ -50,10 +51,19 @@ def brand_name(name: str, province_code: str | None = None) -> str:
     return clean_text(name[: m.start()] if m and m.start() > 5 else name)
 
 
+def _person_like(key: str) -> bool:
+    """Khóa giống họ tên người ('nguyen van hai'): tên khác nhau một chữ là người khác, không so mờ."""
+    words = key.split()
+    return 2 <= len(words) <= 5 and words[0] in SURNAMES
+
+
 def brand_key(name: str, province_code: str | None = None) -> str:
-    """Khóa so khớp: bỏ từ chung (trung tâm, ngoại ngữ…) và địa danh ở cuối tên."""
+    """Khóa so khớp: bỏ từ chung (trung tâm, ngoại ngữ…) và địa danh ở cuối tên.
+
+    Tên người ('Hộ kinh doanh Nguyễn Xuân Thủy') giữ nguyên: tên đệm + tên hay trùng tên xã ('Xuân Thủy').
+    """
     key = re.sub(r"(\s+\d+)+$", "", name_key(brand_name(name, province_code)))   # "newlife uong bi 1"
-    return strip_location_suffix(key, province_code)
+    return key if _person_like(key) else strip_location_suffix(key, province_code)
 
 
 def _similar(a: str, b: str, threshold: int) -> bool:
@@ -118,10 +128,26 @@ _TYPE_CATEGORY = [
 ]
 
 
+# Danh sách TT NN-TH → ngoại ngữ (đa số), kỹ năng sống → kỹ năng, cơ sở dạy thêm (TT 29/2024) → luyện thi/bồi dưỡng
+_LIST_KIND_CATEGORY = {"ngoai_ngu_tin_hoc": "ngoai_ngu", "ky_nang": "ky_nang", "day_them": "luyen_thi"}
+_LANG_NAME = re.compile(r"ngoai ngu|anh ngu|anh van|nhat ngu|han ngu|hoa van|hoa ngu|\bnn\b|\bnnth\b|\bttnn|"
+                        r"tieng (?:anh|trung|nhat|han|phap|duc)|english|language")
+
+
+def _language_first(name: str, category: str) -> str:
+    """'Trung tâm Ngoại ngữ - Tin học X' (Sở cấp phép TT NN-TH): tên nêu ngoại ngữ trước tin học → ngoại ngữ."""
+    f = fold(name)
+    m = _LANG_NAME.search(f)
+    if not m:
+        return category
+    th = f.find("tin hoc")
+    return "ngoai_ngu" if th < 0 or m.start() < th else category
+
+
 def sgd_text(r: dict) -> str:
     """Chữ dùng để phân loại một dòng Sở: tên, phạm vi, loại hình, phần, cột nội dung ('Anh' → 'tiếng Anh')."""
     extra = r.get("extra") or {}
-    parts = [r.get("center_name") or "", r.get("scope") or "", extra.get("center_type") or "", extra.get("section") or ""]
+    parts = [r.get("center_name") or "", r.get("scope") or "", extra.get("center_type") or ""]
     for k, v in (extra.get("other_columns") or {}).items():
         if _CONTENT_COL.search(fold(k)):
             parts += [f"tiếng {w}" if fold(w) in _LANGS else w for w in re.split(r"[,;/]\s*", v)]
@@ -226,10 +252,11 @@ def _group(items: list[dict]) -> list[list[dict]]:
     for idx in [*by_tax.values(), *by_domain.values()]:
         for j in idx[1:]:
             uf.union(idx[0], j)
+    person = [_person_like(it["key"]) for it in items]
     for idx in by_phone.values():
         for n, i in enumerate(idx):
             for j in idx[n + 1:]:
-                if _similar(items[i]["key"], items[j]["key"], 60):
+                if _similar(items[i]["key"], items[j]["key"], 92 if person[i] or person[j] else 60):
                     uf.union(i, j)
     for idx in by_prov.values():
         keys = [items[i]["key"] or "" for i in idx]
@@ -242,7 +269,12 @@ def _group(items: list[dict]) -> list[list[dict]]:
             if len(keys[n]) < 3:
                 continue
             for m in range(n + 1, len(idx)):
-                if (a[n, m] >= 92 or b[n, m] >= 92) and len(keys[m]) >= 3:
+                if len(keys[m]) < 3:
+                    continue
+                if person[idx[n]] or person[idx[m]]:       # hộ kinh doanh đứng tên người: chỉ gộp khi trùng tên
+                    if keys[n] == keys[m]:
+                        uf.union(idx[n], idx[m])
+                elif a[n, m] >= 92 or b[n, m] >= 92:
                     uf.union(idx[n], idx[m])
     groups: dict[int, list[dict]] = {}
     for i, it in enumerate(items):
@@ -274,7 +306,8 @@ def build(conn: sqlite3.Connection, cfg, today: date | None = None) -> dict[str,
         while cid in used_ids:                    # 2 dòng giống hệt nhau mà không gộp được
             cid += "x"
         used_ids.add(cid)
-        prov_code = _first(g["province"] for g in group)
+        provs = [g["province"] for g in sgd if g["province"]] or [g["province"] for g in web if g["province"]]
+        prov_code = max(dict.fromkeys(provs), key=provs.count) if provs else None   # tỉnh có nhiều cơ sở nhất
         province = province_by_code(prov_code).name if prov_code else None
         source_urls = list(dict.fromkeys(
             [g["source_url"] for g in group] + [g["raw"].get("extra", {}).get("list_page") for g in sgd if g["raw"].get("extra")]
@@ -316,10 +349,13 @@ def build(conn: sqlite3.Connection, cfg, today: date | None = None) -> dict[str,
                 category, subjects = classify_subjects(text, categories, title=lead["name"])
         else:
             category, subjects = classify_subjects(text, categories, title=lead["name"])
+        if sgd and category in ("tin_hoc_stem", "khac"):
+            category = _language_first(lead["name"], category)
         if category == "khac" and sgd and re.search(r"ngoai ngu|anh ngu|\bnn\b|language|english", fold(text)):
             category = "ngoai_ngu"
-        if category == "khac" and any((g["raw"].get("extra") or {}).get("list_kind") == "day_them" for g in sgd):
-            category = "luyen_thi"                         # cơ sở dạy thêm (TT 29/2024): bồi dưỡng văn hóa, ôn thi
+        if category == "khac":                             # theo loại danh sách Sở mà trung tâm có tên
+            category = _first(_LIST_KIND_CATEGORY.get((g["raw"].get("extra") or {}).get("list_kind")) for g in sgd) \
+                or category
         if category == "khac" and web and web[0]["raw"].get("category_hint") in CATEGORY_LABELS:
             category = web[0]["raw"]["category_hint"]      # loại hình ghi trong danh sách chuỗi (seeds/websites.json)
         if web and web[0]["raw"].get("delivery_mode", "unknown") != "unknown":
@@ -338,10 +374,10 @@ def build(conn: sqlite3.Connection, cfg, today: date | None = None) -> dict[str,
         fanpage = _first(_best_fanpage(g) for g in web)
 
         # --- người đại diện -----------------------------------------------
-        director = _first(g["raw"].get("director_name") for g in sgd)
+        lead_sgd = _first(g["raw"] for g in sgd if g["raw"].get("director_name"))
         web_person = _first(p for g in web for p in g["raw"].get("persons", []))
-        owner_name = director or (web_person or {}).get("name")
-        owner_title = "Giám đốc trung tâm (danh sách Sở GD&ĐT)" if director else (web_person or {}).get("title")
+        owner_name = lead_sgd["director_name"] if lead_sgd else (web_person or {}).get("name")
+        owner_title = director_title(lead_sgd) if lead_sgd else (web_person or {}).get("title")
 
         # --- quy mô ----------------------------------------------------------
         claims = [Claim(**c) for g in web for c in g["raw"].get("claims", [])]
@@ -354,7 +390,10 @@ def build(conn: sqlite3.Connection, cfg, today: date | None = None) -> dict[str,
         license_state = next((s for s, _ in states if s != "listed"), "listed" if states else None)
         as_of = _first(a for _, a in states)
         last_activity = _first(g["raw"].get("last_activity_date") for g in web)
+        expiries = [parse_license(g["raw"].get("extra", {}).get("license_expiry"))[1] for g in sgd]
+        expiry = max((e for e in expiries if e), default=None)
         status, status_ev = decide_status(StatusSignals(
+            license_expiry=date.fromisoformat(expiry) if expiry else None,
             license_state=license_state, license_list_date=date.fromisoformat(as_of) if as_of else None,
             website_alive=True if web else None,
             last_activity_date=date.fromisoformat(last_activity) if last_activity else None,
@@ -410,6 +449,13 @@ def _best_fanpage(site_item: dict) -> str | None:
 _OTHER_CONTACT = re.compile(r"(?P<label>[^;,\n]*?)[\s:(]*(?P<phone>(?:\+?84|0)[\d .]{8,12}\d)")
 
 
+def director_title(r: dict) -> str:
+    """Chức danh của người đứng tên trong danh sách Sở: giám đốc trung tâm, hoặc chủ cơ sở dạy thêm (TT 29/2024)."""
+    if (r.get("extra") or {}).get("list_kind") == "day_them":
+        return "Chủ cơ sở/người đăng ký dạy thêm (danh sách Sở GD&ĐT công bố)"
+    return "Giám đốc/người đứng đầu (danh sách Sở GD&ĐT)"
+
+
 def parse_other_contacts(text: str) -> list[tuple[str, str, str | None]]:
     """'Tống Thị Thu Huyền (Giám đốc công ty: 0912…)', 'Huyền: 0978…' → [(tên, sđt, ghi chú chức danh)]."""
     out = []
@@ -435,7 +481,7 @@ def _contacts(sgd: list[dict], web: list[dict]) -> list[tuple]:
     for g in sgd:
         r = g["raw"]
         if r.get("director_name") and r.get("phone") and is_mobile(r["phone"]):
-            add(r["director_name"], "Giám đốc/người đứng đầu (danh sách Sở GD&ĐT)", r["phone"], None,
+            add(r["director_name"], director_title(r), r["phone"], None,
                 g["source_url"], g["fetched_at"])
         for name, phone, role in parse_other_contacts(r.get("other_contact") or ""):
             add(name, f"{role or 'Liên hệ khác'} (danh sách Sở GD&ĐT)", phone, None, g["source_url"], g["fetched_at"])

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from .normalize import fold
 
@@ -17,6 +18,7 @@ def _hits(text: str, categories: dict) -> dict[str, list[str]]:
     """Khớp từ khóa. Từ khóa 're:…' là regex phân biệt hoa thường áp lên văn bản gốc (cho từ viết tắt
     như SAT, HSK), còn lại so khớp trên văn bản đã bỏ dấu, chữ thường."""
     f = f" {fold(text)} "
+    text = unicodedata.normalize("NFC", text)       # PDF hay trả chữ tổ hợp (NFD), regex viết ở NFC
     hits: dict[str, list[str]] = {}
     for key, cat in categories.items():
         for subject, keywords in cat["subjects"].items():

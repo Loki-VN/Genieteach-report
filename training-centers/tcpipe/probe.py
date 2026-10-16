@@ -8,6 +8,7 @@ import json
 import logging
 from collections import Counter
 from dataclasses import asdict
+from datetime import date
 from pathlib import Path
 
 from . import db
@@ -30,7 +31,10 @@ def probe_sgd(client: PoliteClient, cfg, prov: Province) -> dict:
         res = sgd.probe_source(client, s["url"], prov.code, s.get("issuer") or f"Sở GD&ĐT {prov.short_name}",
                                follow=s.get("follow", 10))
         for rec in res.pop("_records"):
-            rec.extra.update({"list_page": s["url"], "list_kind": s.get("kind"), "as_of": s.get("as_of"),
+            as_of = s.get("as_of")
+            if as_of == "live":         # danh bạ trực tuyến: tình trạng tại ngày đọc
+                as_of = date.today().isoformat()
+            rec.extra.update({"list_page": s["url"], "list_kind": s.get("kind"), "as_of": as_of,
                               "old_province": s.get("old_province")})
             records.append(rec)
         res["kind"] = s.get("kind")

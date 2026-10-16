@@ -30,9 +30,9 @@ categories:
     label: "ngoại ngữ"
     subjects:
       "tiếng Anh": ["tieng anh", "anh ngu", "anh van", "english"]
-      "tiếng Trung": ["tieng trung", "tieng hoa", "hoa ngu", "trung van", "chinese"]
-      "tiếng Nhật": ["tieng nhat", "nhat ngu", "japanese", "nihongo"]
-      "tiếng Hàn": ["tieng han", "korean"]
+      "tiếng Trung": ["tieng trung", "tieng hoa", "hoa ngu", "trung van", "hoa van", "chinese", "re:(?i)hán ngữ"]
+      "tiếng Nhật": ["tieng nhat", "nhat ngu", "nhat ban", "japanese", "japan", "nihongo"]
+      "tiếng Hàn": ["tieng han", "han quoc", "korean", "korea", "re:(?i)hàn ngữ"]
       "tiếng Pháp": ["tieng phap", "phap ngu", "francais", "french"]
       "tiếng Đức": ["tieng duc", "duc ngu", "deutsch", "german"]
       "ngôn ngữ khác": ["tieng nga", "tieng tay ban nha", "tieng thai", "tieng y "]
@@ -55,6 +55,7 @@ categories:
       "TOPIK": ["re:\\bTOPIK\\b"]
       "vào lớp 10": ["vao lop 10", "thi vao 10", "on thi lop 10", "luyen thi lop 10"]
       "đại học": ["luyen thi dai hoc", "on thi dai hoc", "thi thpt", "danh gia nang luc", "dgnl"]
+      "bồi dưỡng văn hóa": ["boi duong kien thuc", "boi duong van hoa", "day them", "on luyen van hoa"]
     places_queries:
       - "luyện thi IELTS"
       - "luyện thi TOEIC"
@@ -73,8 +74,10 @@ categories:
   ky_nang:
     label: "kỹ năng"
     subjects:
-      "kỹ năng sống": ["ky nang song"]
-      "kỹ năng mềm": ["ky nang mem", "soft skill", "thuyet trinh", "lanh dao"]
+      "kỹ năng sống": ["ky nang song", "ki nang song", "re:\\bKNS\\b", "giao duc ky nang", "boi duong ky nang",
+                       "phat trien ky nang", "ngoai gio chinh khoa"]
+      "kỹ năng mềm": ["ky nang mem", "soft skill", "thuyet trinh", "lanh dao", "huan luyen ky nang", "ky nang lam viec"]
+      "toán tư duy": ["toan tu duy", "tu duy toan", "mathnasium", "ucmas", "abacus", "soroban", "pomath"]
     places_queries:
       - "trung tâm kỹ năng sống"
       - "đào tạo kỹ năng mềm"
@@ -243,6 +246,7 @@ sgd_sources:
       note: "TB 50/TB-SGDĐT 02/12/2025, Ninh Bình mới (gồm Hà Nam, Nam Định cũ): I. TT NN-TH, II. TT KNS, III. tư vấn du học, IV. TT hỗ trợ GD hòa nhập (PDF)"
     - url: "https://ninhbinh.edu.vn/cong-khai-danh-sach-co-so-day-them-ngoai-nha-truong-tinh-den-62026/"
       kind: "day_them"
+      issuer: "UBND cấp xã (Sở GD&ĐT Ninh Bình tổng hợp, công bố)"
       as_of: "2026-06-30"
       old_province: "Ninh Bình"
       note: "DS cơ sở dạy thêm ngoài nhà trường đến 6/2026 (RAR)"
@@ -282,34 +286,42 @@ sgd_sources:
   "48":   # Thành phố Đà Nẵng
     - url: "https://danang.edu.vn/DsDonViGiaoDuc?caphoc=TTNNTH"
       kind: "ngoai_ngu_tin_hoc"
+      as_of: "live"
       old_province: "Đà Nẵng"
       note: "Danh bạ Sở GD&ĐT Đà Nẵng: TT NN-TH, trang 1/6 (tên + quận)"
     - url: "https://danang.edu.vn/DsDonViGiaoDuc?caphoc=TTNNTH&trang=2"
       kind: "ngoai_ngu_tin_hoc"
+      as_of: "live"
       old_province: "Đà Nẵng"
       note: "Danh bạ Sở GD&ĐT Đà Nẵng: TT NN-TH, trang 2/6 (tên + quận)"
     - url: "https://danang.edu.vn/DsDonViGiaoDuc?caphoc=TTNNTH&trang=3"
       kind: "ngoai_ngu_tin_hoc"
+      as_of: "live"
       old_province: "Đà Nẵng"
       note: "Danh bạ Sở GD&ĐT Đà Nẵng: TT NN-TH, trang 3/6 (tên + quận)"
     - url: "https://danang.edu.vn/DsDonViGiaoDuc?caphoc=TTNNTH&trang=4"
       kind: "ngoai_ngu_tin_hoc"
+      as_of: "live"
       old_province: "Đà Nẵng"
       note: "Danh bạ Sở GD&ĐT Đà Nẵng: TT NN-TH, trang 4/6 (tên + quận)"
     - url: "https://danang.edu.vn/DsDonViGiaoDuc?caphoc=TTNNTH&trang=5"
       kind: "ngoai_ngu_tin_hoc"
+      as_of: "live"
       old_province: "Đà Nẵng"
       note: "Danh bạ Sở GD&ĐT Đà Nẵng: TT NN-TH, trang 5/6 (tên + quận)"
     - url: "https://danang.edu.vn/DsDonViGiaoDuc?caphoc=TTNNTH&trang=6"
       kind: "ngoai_ngu_tin_hoc"
+      as_of: "live"
       old_province: "Đà Nẵng"
       note: "Danh bạ Sở GD&ĐT Đà Nẵng: TT NN-TH, trang 6/6 (tên + quận)"
     - url: "https://danang.edu.vn/DsDonViGiaoDuc?caphoc=TTKNS"
       kind: "ky_nang"
+      as_of: "live"
       old_province: "Đà Nẵng"
       note: "Danh bạ Sở GD&ĐT Đà Nẵng: TT kỹ năng sống, trang 1/2"
     - url: "https://danang.edu.vn/DsDonViGiaoDuc?caphoc=TTKNS&trang=2"
       kind: "ky_nang"
+      as_of: "live"
       old_province: "Đà Nẵng"
       note: "Danh bạ Sở GD&ĐT Đà Nẵng: TT kỹ năng sống, trang 2/2"
     - url: "https://quangnam.edu.vn/"

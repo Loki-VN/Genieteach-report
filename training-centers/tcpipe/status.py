@@ -30,6 +30,7 @@ class StatusSignals:
     license_list_date: date | None = None         # ngày cập nhật danh sách Sở có trung tâm
     website_alive: bool | None = None             # HTTP 200, không phải domain bị park
     last_activity_date: date | None = None        # bài đăng/tin tuyển sinh/đánh giá gần nhất
+    license_expiry: date | None = None            # ngày hết hạn giấy phép hoạt động (nếu Sở công bố)
 
 
 def _months_between(a: date, b: date) -> int:
@@ -55,7 +56,10 @@ def decide_status(s: StatusSignals, recent_months: int = 12, today: date | None 
         positives.append((f"ĐKDN: {s.registry_status}", False))
     if s.places_business_status == "OPERATIONAL":
         positives.append(("Google Places: OPERATIONAL", True))
-    if s.license_state == "listed" and s.license_list_date:
+    expired = bool(s.license_expiry and s.license_expiry < today)
+    if expired:
+        ev.append(f"giấy phép hoạt động hết hạn {s.license_expiry.isoformat()} (theo danh sách Sở)")
+    if s.license_state == "listed" and s.license_list_date and not expired:
         recent = _months_between(s.license_list_date, today) <= recent_months
         positives.append((f"Có trong danh sách Sở ({s.license_list_date.isoformat()})", recent))
     if s.website_alive:

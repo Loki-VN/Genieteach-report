@@ -81,3 +81,13 @@ def test_sgd_type_and_content_columns_drive_category():
     assert sgd_type_category(tutoring) == "luyen_thi"
     assert sgd_type_category(lang) is None
     assert "tiếng Anh" in sgd_text(lang) and "tiếng Trung" in sgd_text(lang)
+
+
+def test_household_names_are_not_cut_at_commune_names_or_fuzzy_chained():
+    from tcpipe.build import _group
+
+    k1, k2 = brand_key("Hộ kinh doanh Nguyễn Xuân Thủy", "37"), brand_key("Hộ kinh doanh Nguyễn Xuân Trường", "37")
+    assert k1 == "nguyen xuan thuy" and k2 == "nguyen xuan truong"
+    items = [{"key": k, "province": "37", "phones": [], "tax": None, "domain": None}
+             for k in (k1, k2, brand_key("HKD Nguyễn Xuân Thủy", "37"))]
+    assert sorted(len(g) for g in _group(items)) == [1, 2]

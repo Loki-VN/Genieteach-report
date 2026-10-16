@@ -14,13 +14,16 @@ from .sources.google_places import estimate_cost, estimate_sweep
 
 EXPORT_NOTES = [
     "Sheet centers / branches / contacts_personal: theo schema trong README; mỗi dòng có source_urls / source_url.",
-    "contacts_personal chứa dữ liệu cá nhân (tên, SĐT, email) lấy từ danh sách Sở GD&ĐT công bố công khai và từ "
+    "contacts_personal chứa dữ liệu cá nhân (tên, SĐT, email) lấy từ danh sách do Sở GD&ĐT/UBND công bố công khai và từ "
     "website trung tâm. Chỉ dùng theo mục đích đã được pháp chế phê duyệt; không chia sẻ ra ngoài; xóa khi hết mục đích.",
-    "Sheet nguon_so_gddt: dữ liệu thô từng dòng trong danh sách của Sở (kể cả dòng ngoài phạm vi như tư vấn du học, "
-    "cột in_scope = FALSE). Sheet nguon_website: dữ liệu thô từ website. Sheet nhat_ky_nguon: mọi URL đã thử và kết quả.",
-    "Phạm vi GĐ0: chỉ gồm các nguồn đọc được khi khảo sát (Điện Biên, Sơn La, Quảng Ninh + 10 website mẫu của "
-    "các chuỗi ở Hà Nội). Danh sách Hà Nội chưa có vì file nằm trên host chặn crawler bằng robots.txt; "
-    "Google Places chưa chạy vì chưa có API key.",
+    "Nguồn: danh sách trung tâm ngoại ngữ-tin học, kỹ năng sống, cơ sở dạy thêm (TT 29/2024) do Sở GD&ĐT, cổng dữ liệu mở "
+    "của tỉnh công bố; website chuỗi trung tâm. Sheet bao_phu_tinh: độ phủ từng tỉnh, nguồn đọc được / bị chặn.",
+    "Sheet nguon_so_gddt: dữ liệu thô từng dòng (kể cả dòng ngoài phạm vi như tư vấn du học, hòa nhập, mầm non: "
+    "in_scope = FALSE). Sheet nguon_website: dữ liệu thô từ website. Sheet nhat_ky_nguon: mọi URL đã thử và kết quả.",
+    "Nhiều website Sở chặn kết nối từ máy chủ ở nước ngoài; các tỉnh đó trống ở lần chạy từ cloud. Chạy run_all.bat / "
+    "run_all.sh trên máy ở Việt Nam để lấy tiếp (chỉ chạy phần còn thiếu). Hà Nội: file danh sách nằm trên host có "
+    "robots.txt chặn crawler — không tải. Google Places chưa chạy (chưa có API key).",
+    "Loại hình 'luyện thi' gồm cả cơ sở dạy thêm/bồi dưỡng văn hóa đăng ký theo TT 29/2024 (nhiều hộ kinh doanh, cá nhân).",
     "Quy mô (scale_*): unknown khi chưa có tín hiệu — không loại bản ghi. Công thức xem README.",
 ]
 
