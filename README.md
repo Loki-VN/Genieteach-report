@@ -128,3 +128,10 @@ Kết quả lần chạy gần nhất ghi trong `docs/ACCEPTANCE.md`.
 ## Ngoài phạm vi
 
 Không có backend, đăng nhập, API, gửi thông báo hay nhận xét AI. Báo cáo cho vai trò Giáo viên chưa làm (nút trên trang chủ để trạng thái "chưa có").
+
+## Dữ liệu thị trường: trung tâm đào tạo ngoài nhà trường
+
+Thư mục [`training-centers/`](training-centers/) là pipeline Python riêng, độc lập với prototype
+báo cáo ở trên. Pipeline thu thập và xác minh dữ liệu các trung tâm ngoại ngữ, luyện thi, tin học/STEM
+và kỹ năng sống trên 34 tỉnh/thành. Xem `training-centers/README.md` để biết cách chạy;
+báo cáo khảo sát nguồn ở `training-centers/docs/GD0-khao-sat-nguon.md`.

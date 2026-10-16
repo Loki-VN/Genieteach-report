@@ -1,0 +1,198 @@
+# Cấu hình pipeline trung tâm đào tạo ngoài nhà trường.
+# Mọi đường dẫn tương đối tính từ thư mục training-centers/.
+
+paths:
+  db: data/centers.sqlite
+  raw_cache: data/cache/raw          # HTML/PDF/XLSX thô
+  reports: reports
+  logs: logs
+
+crawl:
+  # Email liên hệ ghép vào User-Agent lấy từ biến môi trường CRAWLER_CONTACT_EMAIL (chỉ ký tự ASCII).
+  user_agent: "GenieTeachResearchBot/0.1 (+market research; contact: {contact})"
+  min_delay_seconds: 2.0             # tối thiểu giữa 2 request cùng domain
+  timeout_seconds: 30
+  max_retries: 4                     # backoff 2s, 4s, 8s, 16s (+ jitter)
+  backoff_base_seconds: 2
+  backoff_max_seconds: 60
+  respect_robots: true
+  raw_cache_ttl_days: 30             # cache HTML/PDF thô của website trung tâm, Sở
+  max_pages_per_site: 8
+  use_playwright: false              # chỉ bật khi trang bắt buộc render JS
+
+# ---------------------------------------------------------------------------
+# Loại hình trung tâm. category = khóa cấp 1; subjects = môn/chứng chỉ.
+# keywords: dùng để phân loại tên/mô tả (so khớp không dấu, chữ thường).
+# places_queries: câu truy vấn Text Search cho Google Places.
+# ---------------------------------------------------------------------------
+categories:
+  ngoai_ngu:
+    label: "ngoại ngữ"
+    subjects:
+      "tiếng Anh": ["tieng anh", "anh ngu", "anh van", "english"]
+      "tiếng Trung": ["tieng trung", "tieng hoa", "hoa ngu", "trung van", "chinese"]
+      "tiếng Nhật": ["tieng nhat", "nhat ngu", "japanese", "nihongo"]
+      "tiếng Hàn": ["tieng han", "han ngu", "korean"]
+      "tiếng Pháp": ["tieng phap", "phap ngu", "francais", "french"]
+      "tiếng Đức": ["tieng duc", "duc ngu", "deutsch", "german"]
+      "ngôn ngữ khác": ["tieng nga", "tieng tay ban nha", "tieng thai", "tieng y", "ngoai ngu"]
+    places_queries:
+      - "trung tâm tiếng Anh"
+      - "trung tâm ngoại ngữ"
+      - "trung tâm tiếng Trung"
+      - "trung tâm tiếng Nhật"
+      - "trung tâm tiếng Hàn"
+      - "trung tâm tiếng Pháp tiếng Đức"
+  luyen_thi:
+    label: "luyện thi"
+    subjects:
+      "IELTS": ["ielts"]
+      "TOEIC": ["toeic"]
+      "TOEFL": ["toefl"]
+      "SAT": [" sat ", "luyen thi sat"]
+      "HSK": ["hsk"]
+      "JLPT": ["jlpt"]
+      "TOPIK": ["topik"]
+      "vào lớp 10": ["vao lop 10", "vao 10", "on thi lop 10", "luyen thi lop 10"]
+      "đại học": ["luyen thi dai hoc", "on thi dai hoc", "thi thpt", "danh gia nang luc", "dgnl"]
+    places_queries:
+      - "luyện thi IELTS"
+      - "luyện thi TOEIC"
+      - "luyện thi vào lớp 10"
+      - "luyện thi đại học"
+  tin_hoc_stem:
+    label: "tin học-STEM"
+    subjects:
+      "tin học": ["tin hoc", "tin hoc van phong", "computer"]
+      "lập trình": ["lap trinh", "coding", "code", "programming"]
+      "STEM/robotics": ["stem", "steam", "robotics", "robot"]
+    places_queries:
+      - "trung tâm tin học"
+      - "lập trình cho trẻ em"
+      - "trung tâm STEM robotics"
+  ky_nang:
+    label: "kỹ năng"
+    subjects:
+      "kỹ năng sống": ["ky nang song"]
+      "kỹ năng mềm": ["ky nang mem", "soft skill", "thuyet trinh", "lanh dao"]
+    places_queries:
+      - "trung tâm kỹ năng sống"
+      - "đào tạo kỹ năng mềm"
+
+# ---------------------------------------------------------------------------
+# Nguồn 1: danh sách/quyết định của Sở GD&ĐT. Khóa = mã tỉnh mới (2 số).
+# Chỉ ghi các URL đã xác minh được qua tìm kiếm ở GĐ0; tỉnh khác bổ sung ở GĐ2.
+# ---------------------------------------------------------------------------
+sgd_sources:
+  "01":   # Hà Nội — mục "Trung tâm ngoại trường" / "Dịch vụ giáo dục được cấp phép"
+    - url: "https://hanoi.edu.vn/trung-tam-ngoai-truong/danh-sach-trung-tam-ngoai-ngu-tin-hoc-tinh-den-thang-102025/ctmb/1099/16600"
+      kind: ngoai_ngu_tin_hoc
+      note: "Danh sách TT NN-TH đến 10/2025, file đính kèm .xlsx"
+    - url: "https://hanoi.edu.vn/trung-tam-ngoai-truong/danh-sach-cac-trung-tam-boi-duong-ky-nang-tren-dia-ban-thanh-pho-tinh-den-thang/ct/1099/16114"
+      kind: ky_nang
+      note: "Danh sách TT bồi dưỡng kỹ năng đến 3/2025"
+    - url: "https://hanoi.edu.vn/dich-vu-giao-duc-duoc-cap-phep/cmb/1120"
+      kind: index
+      note: "Trang mục lục; tìm bản danh sách mới hơn"
+  "11":   # Điện Biên (tỉnh nhỏ, không sáp nhập) — đề xuất làm tỉnh thử
+    - url: "http://dienbien.edu.vn/index.php/laws/detail/Thong-bao-cac-trung-tam-ngoai-ngu-tin-hoc-co-so-giao-duc-ky-nang-song-to-chuc-tu-van-du-hoc-duoc-cho-phep-thanh-lap-hoat-dong-tinh-den-thang-5-nam-2025-528/"
+      kind: ngoai_ngu_tin_hoc
+      note: "TT NN-TH + cơ sở GD kỹ năng sống + tư vấn du học, đến 5/2025"
+  "14":   # Sơn La — cổng dữ liệu mở của tỉnh
+    - url: "https://data.sonla.gov.vn/detail_data/du-lieu-danh-sach-cac-trung-tam-dao-tao-ngoai-ngu-tren-dia-ban"
+      kind: ngoai_ngu_tin_hoc
+      note: "Dữ liệu mở, cập nhật 10/07/2024"
+  "22":   # Quảng Ninh
+    - url: "https://www.quangninh.gov.vn/so/sogiaoducdaotao/Lists/TinTuc/Attachments/6164/12.2024%20danh%20sach%20TTNNTH%20(1).pdf"
+      kind: ngoai_ngu_tin_hoc
+      note: "PDF 12/2024: huyện, tên TT, địa chỉ, công ty chủ quản, QĐ cho phép"
+  "40":   # Nghệ An
+    - url: "http://nghean.edu.vn/menutop/tra-cuu/danh-sach-trung-tam-ngoai-ngu-tin-hoc"
+      kind: ngoai_ngu_tin_hoc
+  "44":   # Quảng Trị (cũ, trước sáp nhập với Quảng Bình)
+    - url: "https://quangtri.edu.vn/trang-chu/tu-van-du-hoc/ngoai-ngu-tin-hoc/danh-sach-trung-tam-ngoai-ngu-tin-hoc-11.2024.html"
+      kind: ngoai_ngu_tin_hoc
+  "79":   # TP.HCM
+    - url: "https://hcm.edu.vn/tt-ngoai-ngu-tin-hoc/tin-khan-danh-sach-cac-trung-tam-ngoai-ngu-tin-hoc-duoc-cap-phep-tinh-den-thang/ctmb/41743/62428"
+      kind: ngoai_ngu_tin_hoc
+      note: "Bản 05/2019 — cần tìm bản mới hơn trong cùng mục"
+
+# ---------------------------------------------------------------------------
+# Nguồn 2: đăng ký doanh nghiệp. Mặc định TẮT; chỉ bật từng cổng sau khi đã
+# đọc robots.txt + điều khoản và xác nhận không có CAPTCHA/chặn bot.
+# ---------------------------------------------------------------------------
+business_registry:
+  vsic_codes:            # VSIC 2025 (QĐ 36/2025/QĐ-TTg, hiệu lực 15/11/2025)
+    "8559": "Giáo dục khác chưa được phân vào đâu"
+    "8551": "Giáo dục thể thao và giải trí"
+    "8552": "Giáo dục văn hóa nghệ thuật"
+    "856x": "Dịch vụ hỗ trợ giáo dục (mã cấp 4 cần đối chiếu Phụ lục QĐ 36/2025)"
+  portals:
+    - name: dangkykinhdoanh
+      base_url: "https://dangkykinhdoanh.gov.vn"
+      enabled: false
+      note: "Cổng quốc gia; NĐ 01/2021 Điều 36: tra cứu miễn phí tên, mã DN, địa chỉ, ngành nghề, người đại diện, tình trạng"
+    - name: masothue
+      base_url: "https://masothue.com"
+      enabled: false
+      note: "Bên thứ ba — cần đọc điều khoản; thường có chống bot"
+    - name: hosocongty
+      base_url: "https://hosocongty.vn"
+      enabled: false
+      note: "Bên thứ ba — cần đọc điều khoản"
+
+# ---------------------------------------------------------------------------
+# Nguồn 3: Google Places API (New). Key: biến môi trường GOOGLE_PLACES_API_KEY.
+# Điều khoản: chỉ place_id được lưu lâu dài; nội dung khác chỉ cache tạm.
+# ---------------------------------------------------------------------------
+google_places:
+  enabled: true
+  language_code: vi
+  region_code: VN
+  page_size: 20
+  max_pages: 3                  # Text Search trả tối đa ~60 kết quả/truy vấn
+  text_search_tier: pro         # ids_only | pro | enterprise (xem tcpipe/sources/google_places.py)
+  content_cache_days: 30        # xóa nội dung Places (trừ place_id) sau số ngày này
+  monthly_budget_usd: 50        # vượt ngưỡng thì dừng gọi API
+  # Giá USD/1.000 request ở bậc 0–100k, free = số request miễn phí/tháng/SKU (từ 01/03/2025).
+  pricing:
+    text_search_ids_only:     {usd_per_1000: 0,  free_per_month: null}
+    text_search_pro:          {usd_per_1000: 32, free_per_month: 5000}
+    text_search_enterprise:   {usd_per_1000: 35, free_per_month: 1000}
+    place_details_essentials: {usd_per_1000: 5,  free_per_month: 10000}
+    place_details_pro:        {usd_per_1000: 17, free_per_month: 5000}
+    place_details_enterprise: {usd_per_1000: 20, free_per_month: 1000}
+  # Chiến lược quét: phường đô thị quét theo từng phường; xã nông thôn gộp theo cụm.
+  # Chiến lược quét: truy vấn kèm tên xã/phường + tỉnh (không cần toạ độ).
+  # Phường: đủ bộ places_queries (15 câu); xã: chỉ rural_queries; cộng 1 lượt cấp tỉnh.
+  sweep:
+    rural_queries: ["trung tâm ngoại ngữ", "trung tâm tin học", "luyện thi"]
+    avg_pages_urban: 1.6        # số trang trung bình/truy vấn — hiệu chỉnh ở GĐ1
+    avg_pages_rural: 1.1
+
+# ---------------------------------------------------------------------------
+# Quy mô (xem README mục "Công thức quy mô"). Đơn vị: số học viên đang theo học.
+# ---------------------------------------------------------------------------
+scale:
+  buckets:                      # [tên, cận dưới (bao gồm)]
+    - ["XS", 0]                 # < 100: dưới ngưỡng mục tiêu, vẫn giữ để lọc
+    - ["S", 100]
+    - ["M", 500]
+    - ["L", 2000]
+    - ["XL", 5000]
+    - ["XXL", 20000]
+  annual_to_active: 0.5         # "X học viên mỗi năm" → X × 0.5 đang học
+  cumulative_growth_factor: 1.3 # tích lũy / số năm hoạt động × hệ số tăng trưởng
+  cumulative_default_years: 8   # khi không biết năm thành lập
+  learners_per_branch:          # chỉ áp dụng khi có từ 2 cơ sở trở lên
+    ngoai_ngu: 350
+    luyen_thi: 250
+    tin_hoc_stem: 200
+    ky_nang: 150
+    khac: 150
+  learners_per_teacher: 25
+  learners_per_review: 8        # số đánh giá Google (tổng các cơ sở) × hệ số
+  disagreement_steps: 2         # tín hiệu phụ lệch >= 2 bậc thì hạ độ tin cậy
+
+status:
+  recent_activity_months: 12
