@@ -27,7 +27,10 @@ def run_all(cfg, *, provinces: list[str] | None = None, refresh: bool = False, w
 
     codes = provinces or sorted(cfg["sgd_sources"])
     conn = db.connect(cfg.path("db"))
-    todo = [c for c in codes if refresh or db.checkpoint_status(conn, "gd0", c, "sgd") != "done"]
+    # Tỉnh còn URL nguồn chưa đọc xong (bị chặn, lỗi mạng, chưa chạy) thì chạy lại cả tỉnh;
+    # URL đã đọc được nằm trong cache thô nên không tải lại.
+    finished = {r[0] for r in conn.execute("SELECT url FROM source_log WHERE source='sgd' AND outcome IN ('ok', 'no_data')")}
+    todo = [c for c in codes if refresh or any(s["url"] not in finished for s in cfg["sgd_sources"].get(c, []))]
     conn.close()
     report: dict = {"sgd": {}, "skipped_done": sorted(set(codes) - set(todo))}
 

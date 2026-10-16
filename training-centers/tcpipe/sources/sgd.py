@@ -31,6 +31,9 @@ COLUMNS: list[tuple[str, tuple[str, ...]]] = [
                             "qd thanh lap")),
     ("other_contact", ("lien he khac",)),
     ("email", ("dia chi email", "email", "e-mail", "thu dien tu")),
+    ("website", ("website", "trang web", "trang thong tin dien tu")),
+    ("center_type", ("loai hinh",)),
+    ("license_expiry", ("ngay het han", "het han")),
     ("scope", ("mon giang day", "mon hoc", "cho phep thanh lap", "noi dung hoat dong", "noi dung dao tao", "linh vuc", "hoat dong dao tao",
                "chuong trinh dao tao")),
     ("legal_entity_name", ("don vi chu quan", "cong ty chu quan", "co quan chu quan", "to chuc thanh lap",
@@ -38,10 +41,14 @@ COLUMNS: list[tuple[str, tuple[str, ...]]] = [
     ("director_name", ("giam doc", "nguoi dung dau", "nguoi dai dien", "ho ten", "ho va ten")),
     ("phone", ("dien thoai", "sdt", "so dt", "hotline", "=lien he")),
     ("license_date", ("ngay cap", "ngay ky", "ngay quyet dinh", "thoi gian cap phep", "ngay cho phep")),
-    ("license_number", ("qd cap phep", "quyet dinh", "so qd", "giay phep", "so hieu", "=qd")),
+    ("license_number", ("qd cap phep", "quyet dinh", "so qd", "giay phep", "so hieu", "=qd", "van ban cap phep")),
     ("address_raw", ("dia chi", "dia diem", "tru so", "noi dat")),
-    ("center_name", ("ten trung tam", "ten co so", "ten don vi", "=trung tam", "=ten", "ten goi")),
-    ("district", ("quan/huyen", "quan, huyen", "=huyen", "=quan", "huyen (tx, tp)", "huyen (thi xa")),
+    ("tax_code", ("ma so thue", "=mst", "ma so doanh nghiep", "ma so dang ky", "ma so dk")),
+    ("center_name", ("ten trung tam", "ten co so", "ten don vi", "=trung tam", "=ten", "ten goi", "=ten tt",
+                     "ten tt ", "=don vi", "=co so day them", "ten ho kinh doanh", "ten to chuc", "ten nguoi nop thue",
+                     "=co so", "=ten co so day them")),
+    ("district", ("quan/huyen", "quan, huyen", "=huyen", "=quan", "huyen (tx, tp)", "huyen (thi xa", "=khu vuc",
+                  "=dia ban", "=dia phuong")),
     ("status_text", ("trang thai", "tinh trang", "ghi chu")),
 ]
 _LICENSE_NO = re.compile(r"(\d{1,6})\s*/\s*((?:Q[\u0110D]|GCN|GP|CN)[\w\-/&]*)", re.I)
@@ -81,7 +88,7 @@ class SgdRecord:
 # Khám phá link
 # ---------------------------------------------------------------------------
 _ATTACH_HINT = re.compile(r"danh sach|danh-sach|trung tam|trung-tam|ngoai ngu|ngoai-ngu|tin hoc|ky nang|ttnn|tt-nn|"
-                          r"cap phep|cho phep|nd125|nd-125")
+                          r"cap phep|cho phep|nd125|nd-125|\bds\b|\bds-|day them|day-them|dtht|co so|co-so")
 _DOWNLOAD_QS = re.compile(r"[?&](download|pdf|file|attachment)=", re.I)
 
 
@@ -108,7 +115,7 @@ def find_links(html: str, base_url: str) -> tuple[list[dict], list[dict]]:
     attachments, lists = [], []
     for url, text in texts.items():
         parts = urlsplit(url)
-        ext = re.search(r"\.(xlsx?|pdf|docx?|csv)$", parts.path.lower())
+        ext = re.search(r"\.(xlsx?|pdf|docx?|csv|rar|zip|7z)$", parts.path.lower())
         is_download = bool(_DOWNLOAD_QS.search("?" + parts.query)) and "download" in parts.query.lower()
         if ext or is_download:
             score = 0
@@ -172,14 +179,27 @@ def _xls_cell(v) -> str:
 
 
 def pdf_tables(content: bytes) -> list[list[list[str]]]:
+    """Gộp bảng của mọi trang thành một bảng; chèn dòng tiêu đề phần (I., II., DANH SÁCH …) nằm ngoài bảng
+    để phân biệt các phần (vd. phần 'tư vấn du học' ngoài phạm vi)."""
     import pdfplumber
 
     content = content[content.find(b"%PDF"):]
     rows: list[list[str]] = []
     with pdfplumber.open(io.BytesIO(content)) as pdf:
         for page in pdf.pages:
-            for table in page.extract_tables():
-                rows.extend([clean_text(c or "") for c in r] for r in table if r and any(r))
+            found = page.find_tables()
+            boxes = [t.bbox for t in found]
+            events = [(t.bbox[1], 1, t) for t in found]
+            for line in page.extract_text_lines():
+                inside = any(b[1] - 1 <= line["top"] <= b[3] + 1 for b in boxes)
+                text = clean_text(line["text"])
+                if not inside and _SECTION.search(fold(text)):
+                    events.append((line["top"], 0, text))
+            for _, kind, obj in sorted(events, key=lambda e: (e[0], e[1])):
+                if kind == 0:
+                    rows.append([obj])
+                else:
+                    rows.extend([clean_text(c or "") for c in r] for r in obj.extract() if r and any(r))
     return [rows] if rows else []
 
 
@@ -236,7 +256,18 @@ def _split_director(text: str | None) -> tuple[str | None, str | None]:
     return clean_text(text), None
 
 
-_OUT_OF_SCOPE = re.compile(r"tu van du hoc|van phong dai dien|du hoc")
+_OUT_OF_SCOPE = re.compile(r"tu van du hoc|van phong dai dien|du hoc|giao duc hoa nhap|ho tro phat trien giao duc|"
+                           r"nhom tre|mam non|mau giao")
+_SECTION = re.compile(r"^(?:[ivx]{1,4}|[a-e]|phan\s+[ivx\d]+|phu luc\s*[ivx\d]*)\s*[.:\-)/]?\s+\S|^danh sach\b")
+
+
+def _section_of(rows: list[list[str]]) -> str | None:
+    """Tiêu đề phần gần nhất phía trên dòng tiêu đề bảng (vd. 'I. DANH SÁCH TRUNG TÂM NGOẠI NGỮ')."""
+    for row in reversed(rows):
+        cells = {c for c in row if c}
+        if len(cells) <= 2 and _SECTION.search(fold(" ".join(cells))):
+            return clean_text(" ".join(cells))[:200]
+    return None
 
 
 def rows_to_records(rows: list[list[str]], source_url: str, province_code: str,
@@ -247,14 +278,21 @@ def rows_to_records(rows: list[list[str]], source_url: str, province_code: str,
     h, mapping = found
     meta = {"header_row": h, "columns": {rows[h][j]: k for j, k in mapping.items()}}
     records = []
+    section = _section_of(rows[:h])
+    header = rows[h]
     for row in rows[h + 1:]:
         again = detect_header([row], max_scan=1)       # bảng nhiều phần lặp lại dòng tiêu đề
         if again:
-            mapping = again[1]
+            mapping, header = again[1], row
             continue
-        if sum(1 for c in row if c) < 3:               # mảnh chữ do PDF tách dòng
+        cells = {c for c in row if c}
+        if len(cells) <= 2 and _SECTION.search(fold(" ".join(cells))):
+            section = clean_text(" ".join(cells))[:200]     # "II. DANH SÁCH CÁC TRUNG TÂM GD KỸ NĂNG SỐNG"
             continue
         values = {key: row[j] for j, key in mapping.items() if j < len(row) and row[j]}
+        numbered = bool(re.fullmatch(r"\d{1,4}\.?", values.get("stt", "")))
+        if sum(1 for c in row if c) < (2 if numbered else 3):   # mảnh chữ do PDF tách dòng (không có STT)
+            continue
         name = values.get("center_name")
         if not name or fold(name) in ("ten trung tam", "(2)", "2") or re.fullmatch(r"\(?\d+\)?", name):
             continue
@@ -277,8 +315,14 @@ def rows_to_records(rows: list[list[str]], source_url: str, province_code: str,
             phone=normalize_phone(values.get("phone")), license_number=number or values.get("license_number"),
             license_date=date2 or date, license_issuer=issuer, status_text=status, scope=values.get("scope"),
             establish_decision=values.get("establish_decision"), other_contact=values.get("other_contact"),
-            in_scope=not _OUT_OF_SCOPE.search(fold(f"{name} {values.get('scope') or ''}")),
+            in_scope=not _OUT_OF_SCOPE.search(fold(f"{name} {values.get('scope') or ''} {section or ''}")),
         )
+        others = {header[j]: row[j] for j in range(min(len(row), len(header)))
+                  if j not in mapping and row[j] and header[j]}
+        rec.extra.update({k: v for k, v in {
+            "section": section, "website": values.get("website"), "center_type": values.get("center_type"),
+            "license_expiry": values.get("license_expiry"), "tax_code": values.get("tax_code"),
+            "other_columns": others or None}.items() if v})
         records.append(rec)
     return records, meta
 
@@ -341,8 +385,68 @@ def tables_from(content: bytes, content_type: str, url: str) -> tuple[str, list[
             return "doc", [], notes
     if fmt == "html":
         return fmt, html_tables(content.decode("utf-8", errors="replace")), notes
+    if fmt in ("rar/7z", "zip"):
+        tables, more = archive_tables(content, fmt)
+        return fmt, tables, notes + more
     notes.append(f"Định dạng {fmt} chưa hỗ trợ đọc tự động")
     return fmt, [], notes
+
+
+_TABLE_EXT = (".xlsx", ".xls", ".pdf", ".docx", ".csv", ".htm", ".html")
+_SEVEN_ZIP_WIN = r"C:\Program Files\7-Zip\7z.exe"
+
+
+def archive_tables(content: bytes, fmt: str) -> tuple[list[list[list[str]]], list[str]]:
+    """Giải nén RAR/7z/ZIP vào thư mục tạm (chỉ đọc file bảng bên trong, không chạy gì) rồi đọc từng file."""
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    notes: list[str] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        arc, out = Path(tmp) / ("archive.zip" if fmt == "zip" else "archive.rar"), Path(tmp) / "x"
+        arc.write_bytes(content)
+        out.mkdir()
+        if fmt == "zip":
+            zipfile.ZipFile(arc).extractall(out)
+        else:
+            tool = shutil.which("unar") or shutil.which("7z") or shutil.which("7za") or (
+                _SEVEN_ZIP_WIN if os.path.exists(_SEVEN_ZIP_WIN) else None)
+            if not tool:
+                return [], ["File nén RAR/7z: cần cài unar (macOS/Linux) hoặc 7-Zip (Windows) để đọc tự động"]
+            cmd = ([tool, "-q", "-f", "-o", str(out), str(arc)] if "unar" in tool
+                   else [tool, "x", "-y", f"-o{out}", str(arc)])
+            try:
+                done = subprocess.run(cmd, capture_output=True, timeout=300, text=True, errors="replace")
+            except (subprocess.SubprocessError, OSError) as e:
+                return [], [f"Giải nén lỗi: {e}"]
+            failed = [ln.strip() for ln in done.stdout.splitlines() if "Failed!" in ln]
+            if done.returncode and failed:      # vẫn đọc các file giải nén được
+                notes.append(f"{len(failed)} file trong gói nén bị lỗi: {failed[0][:150]}")
+        tables: list[list[list[str]]] = []
+        for f in sorted(out.rglob("*")):
+            if f.is_file() and f.suffix.lower() in _TABLE_EXT:
+                try:
+                    sub_fmt, sub_tables, _ = tables_from(f.read_bytes(), "", f.name)
+                except Exception as e:      # file hỏng trong gói nén: ghi chú, đọc tiếp file khác
+                    notes.append(f"{f.name}: lỗi đọc ({type(e).__name__})")
+                    continue
+                tables.extend(sub_tables)
+                notes.append(f"{f.name}: {sub_fmt}, {len(sub_tables)} bảng")
+            elif f.is_file() and f.suffix.lower() == ".doc":
+                notes.append(f"{f.name}: .doc (Word 97-2003) chưa đọc tự động")
+    return tables, notes
+
+
+_GSHEET = re.compile(r"https://docs\.google\.com/spreadsheets/d/([\w-]+)")
+
+
+def google_sheet_export(url: str) -> str | None:
+    """Link Google Sheet công khai do Sở đăng → link tải .xlsx (trang /edit chỉ là ứng dụng JS)."""
+    m = _GSHEET.match(url)
+    return f"https://docs.google.com/spreadsheets/d/{m.group(1)}/export?format=xlsx" if m else None
 
 
 def probe_source(client: PoliteClient, url: str, province_code: str, issuer: str,
@@ -351,9 +455,10 @@ def probe_source(client: PoliteClient, url: str, province_code: str, issuer: str
     tiếp tối đa `follow_lists` trang danh sách được link tới (một tầng) và file đính kèm của chúng."""
     out: dict = {"url": url, "robots_allowed": None, "pages": [], "records": 0, "samples": [], "errors": [],
                  "_records": []}
+    fetch_url = google_sheet_export(url) or url
     try:
-        out["robots_allowed"] = client.allowed(url)
-        page = client.get(url)
+        out["robots_allowed"] = client.allowed(fetch_url)
+        page = client.get(fetch_url)
     except FetchError as e:
         out["errors"].append(f"{type(e).__name__}: {e}")
         return out
@@ -373,7 +478,11 @@ def probe_source(client: PoliteClient, url: str, province_code: str, issuer: str
 
     def parse(queue: list) -> None:
         for src_url, res in queue:
-            fmt, tables, notes = tables_from(res.content, res.content_type, src_url)
+            try:
+                fmt, tables, notes = tables_from(res.content, res.content_type, src_url)
+            except Exception as e:          # file hỏng/định dạng lạ: ghi lỗi, không dừng cả tỉnh
+                out["errors"].append(f"{src_url}: không đọc được file ({type(e).__name__}: {e})")
+                continue
             info = {"url": src_url, "format": fmt, "http_status": res.status, "tables": len(tables), "notes": notes}
             for t in tables:
                 recs, meta = rows_to_records(t, src_url, province_code, issuer)

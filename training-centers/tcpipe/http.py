@@ -36,6 +36,9 @@ _CHALLENGE_TITLE = re.compile(
     re.I,
 )
 _TITLE = re.compile(rb"<title[^>]*>(.*?)</title>", re.I | re.S)
+# Trang thử thách bằng JS: đặt cookie rồi tải lại (vd. hue.edu.vn trả 177 byte) — trình crawl không chạy JS.
+_JS_COOKIE_CHALLENGE = re.compile(rb"document\.cookie\s*=.*?(location\.reload|location\.href|window\.location)",
+                                  re.I | re.S)
 
 
 class FetchError(Exception):
@@ -249,6 +252,8 @@ class PoliteClient:
         title = m.group(1).decode("utf-8", errors="replace") if m else ""
         if _CHALLENGE_TITLE.search(title):
             raise BlockedError(f"{r.url}: trang chống bot/CAPTCHA ({title.strip()[:60]!r})")
+        if len(r.content) < 2000 and _JS_COOKIE_CHALLENGE.search(r.content):
+            raise BlockedError(f"{r.url}: trang thử thách cookie bằng JavaScript (chống bot)")
         if r.status in (403, 429, 503) and _CHALLENGE_MARKERS.search(r.content[:200_000]):
             raise BlockedError(f"{r.url}: trang chống bot/CAPTCHA (HTTP {r.status})")
         if r.status in (403, 429):

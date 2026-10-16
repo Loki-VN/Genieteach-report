@@ -108,6 +108,32 @@ class _UF:
         self.p[self.find(a)] = self.find(b)
 
 
+_LANGS = {"anh", "trung", "nhat", "han", "phap", "duc", "nga", "thai", "lao"}
+_CONTENT_COL = re.compile(r"noi dung|mon|ngon ngu|chuong trinh|ky nang dao tao|linh vuc")
+# Cột "Loại hình" / tiêu đề phần trong danh sách Sở → loại hình nghiên cứu (dùng trước khi đoán theo từ khóa)
+_TYPE_CATEGORY = [
+    (re.compile(r"\bkns\b|ky nang song|giao duc ky nang|ngoai gio chinh khoa|toan tu duy|\bttd\b"), "ky_nang"),
+    (re.compile(r"\bstem\b|robot|lap trinh"), "tin_hoc_stem"),
+    (re.compile(r"boi duong kien thuc|boi duong van hoa|day them|luyen thi"), "luyen_thi"),
+]
+
+
+def sgd_text(r: dict) -> str:
+    """Chữ dùng để phân loại một dòng Sở: tên, phạm vi, loại hình, phần, cột nội dung ('Anh' → 'tiếng Anh')."""
+    extra = r.get("extra") or {}
+    parts = [r.get("center_name") or "", r.get("scope") or "", extra.get("center_type") or "", extra.get("section") or ""]
+    for k, v in (extra.get("other_columns") or {}).items():
+        if _CONTENT_COL.search(fold(k)):
+            parts += [f"tiếng {w}" if fold(w) in _LANGS else w for w in re.split(r"[,;/]\s*", v)]
+    return " ".join(parts)
+
+
+def sgd_type_category(r: dict) -> str | None:
+    extra = r.get("extra") or {}
+    f = fold(f"{extra.get('center_type') or ''} | {extra.get('section') or ''}")
+    return next((cat for rx, cat in _TYPE_CATEGORY if rx.search(f)), None)
+
+
 def _license_state(status_text: str | None) -> str:
     f = fold(status_text)
     if _STATUS_SUSPENDED.search(f):
@@ -141,8 +167,10 @@ def _items(conn: sqlite3.Connection) -> list[dict]:
                 continue
             key = brand_key(p["center_name"], row["province"])
             dom = email_domain(p.get("email"))
+            tax = re.sub(r"\s", "", str((p.get("extra") or {}).get("tax_code") or ""))
             base.update(name=brand_name(p["center_name"]), key=key,
-                        phones=[p["phone"]] if p.get("phone") else [], tax=None,
+                        phones=[p["phone"]] if p.get("phone") else [],
+                        tax=tax if re.fullmatch(r"\d{10}(-\d{3})?", tax) else None,
                         domain=dom if dom and domain_matches_brand(dom, key) else None)
         else:
             for k, v in seeds.get(p["url"], {}).items():     # gợi ý từ seeds/websites.json cho bản ghi cũ
@@ -278,8 +306,11 @@ def build(conn: sqlite3.Connection, cfg, today: date | None = None) -> dict[str,
                                  "ward_new": n.ward_new, "phone": None, "source_url": url})
 
         # --- phân loại -----------------------------------------------------
-        text = " ".join([g["raw"].get("center_name", "") + " " + (g["raw"].get("scope") or "") for g in sgd])
-        if web:
+        text = " ".join(sgd_text(g["raw"]) for g in sgd)
+        typed = _first(sgd_type_category(g["raw"]) for g in sgd)
+        if typed:
+            category, subjects = typed, classify_subjects(text, categories, title=lead["name"])[1]
+        elif web:
             category, subjects = web[0]["raw"].get("category") or "khac", web[0]["raw"].get("subjects") or []
             if category == "khac" and sgd:
                 category, subjects = classify_subjects(text, categories, title=lead["name"])
@@ -287,6 +318,8 @@ def build(conn: sqlite3.Connection, cfg, today: date | None = None) -> dict[str,
             category, subjects = classify_subjects(text, categories, title=lead["name"])
         if category == "khac" and sgd and re.search(r"ngoai ngu|anh ngu|\bnn\b|language|english", fold(text)):
             category = "ngoai_ngu"
+        if category == "khac" and any((g["raw"].get("extra") or {}).get("list_kind") == "day_them" for g in sgd):
+            category = "luyen_thi"                         # cơ sở dạy thêm (TT 29/2024): bồi dưỡng văn hóa, ôn thi
         if category == "khac" and web and web[0]["raw"].get("category_hint") in CATEGORY_LABELS:
             category = web[0]["raw"]["category_hint"]      # loại hình ghi trong danh sách chuỗi (seeds/websites.json)
         if web and web[0]["raw"].get("delivery_mode", "unknown") != "unknown":

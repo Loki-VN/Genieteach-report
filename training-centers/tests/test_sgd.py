@@ -61,3 +61,39 @@ def test_find_links_download_query_and_sidebar_ranking():
     assert att[0]["url"].endswith("?download=1&id=0") and att[0]["score"] > 0
     assert att[-1]["url"].endswith("lich-tcd-2024.pdf") and att[-1]["score"] < 0
     assert [l["url"] for l in lists] == ["https://dienbien.edu.vn/x"]
+
+
+def test_sections_mark_study_abroad_out_of_scope_and_keep_extra_columns():
+    rows = [["I. DANH SÁCH TRUNG TÂM NGOẠI NGỮ, TIN HỌC"],
+            ["STT", "Tên trung tâm", "Địa chỉ", "Loại hình", "Website", "Ngày hết hạn", "Ghi chép"],
+            ["1", "Trung tâm Anh ngữ Sao Mai", "12 Lê Lợi, Hoa Lư", "Ngoại ngữ", "saomai.edu.vn", "01/01/2027", "x"],
+            ["III. DANH SÁCH CÁC TỔ CHỨC TƯ VẤN DU HỌC", ""],
+            ["2", "Công ty TNHH ABC", "5 Trần Hưng Đạo, Nam Định", "", "", "", ""]]
+    recs, _ = rows_to_records(rows, "https://x/ds.pdf", "37", "Sở GD&ĐT")
+    assert [r.in_scope for r in recs] == [True, False]
+    assert recs[0].extra["section"].startswith("I. DANH SÁCH")
+    assert recs[0].extra["website"] == "saomai.edu.vn" and recs[0].extra["center_type"] == "Ngoại ngữ"
+    assert recs[0].extra["license_expiry"] == "01/01/2027"
+    assert recs[1].extra["section"].startswith("III.")
+
+
+def test_google_sheet_link_becomes_xlsx_export_and_zip_archive_is_read():
+    import zipfile
+
+    from tcpipe.sources.sgd import google_sheet_export, tables_from
+
+    assert google_sheet_export("https://docs.google.com/spreadsheets/d/AbC-1_x/edit?usp=sharing") == \
+        "https://docs.google.com/spreadsheets/d/AbC-1_x/export?format=xlsx"
+    assert google_sheet_export("https://example.com/a.xlsx") is None
+
+    wb = Workbook()
+    wb.active.append(["STT", "Tên trung tâm", "Địa chỉ"])
+    wb.active.append(["1", "Trung tâm Tin học Á Châu", "1 Lý Thái Tổ"])
+    xbuf, zbuf = io.BytesIO(), io.BytesIO()
+    wb.save(xbuf)
+    with zipfile.ZipFile(zbuf, "w") as z:
+        z.writestr("ds/day-them.xlsx", xbuf.getvalue())
+        z.writestr("readme.txt", "bỏ qua")
+    fmt, tables, notes = tables_from(zbuf.getvalue(), "application/zip", "https://x/ds.zip")
+    assert fmt == "zip" and len(tables) == 1 and tables[0][1][1] == "Trung tâm Tin học Á Châu"
+    assert notes == ["day-them.xlsx: xlsx, 1 bảng"]

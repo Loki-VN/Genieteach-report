@@ -68,3 +68,16 @@ def test_group_uses_indexes_and_fuzzy_within_province():
              item("Anh ngữ Apollo", "01", domain="apollo.edu.vn"), item("Apollo Quảng Ninh", "22", domain="apollo.edu.vn")]
     sizes = sorted(len(g) for g in _group(items))
     assert sizes == [1, 1, 1, 2, 2]
+
+
+def test_sgd_type_and_content_columns_drive_category():
+    from tcpipe.build import sgd_text, sgd_type_category
+
+    kns = {"center_name": "Trung tâm Ánh Dương", "extra": {"section": "II. DANH SÁCH CÁC TRUNG TÂM GIÁO DỤC KỸ NĂNG SỐNG"}}
+    tutoring = {"center_name": "Trung tâm Bình Minh", "extra": {"center_type": "Bồi dưỡng kiến thức"}}
+    lang = {"center_name": "Trung tâm GCT", "extra": {"center_type": "Ngoại ngữ",
+                                                      "other_columns": {"Nội Dung Giảng Dạy": "Anh, Trung"}}}
+    assert sgd_type_category(kns) == "ky_nang"
+    assert sgd_type_category(tutoring) == "luyen_thi"
+    assert sgd_type_category(lang) is None
+    assert "tiếng Anh" in sgd_text(lang) and "tiếng Trung" in sgd_text(lang)

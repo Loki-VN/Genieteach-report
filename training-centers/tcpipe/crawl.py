@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 
@@ -19,6 +20,8 @@ from .probe import _outcome_of_error
 from .sources import websites
 
 log = logging.getLogger(__name__)
+
+_DOMAIN = re.compile(r"(?:[a-z0-9-]+\.)+[a-z]{2,}")
 
 FREE_MAIL = {
     "gmail.com", "gmail.com.vn", "yahoo.com", "yahoo.com.vn", "ymail.com", "hotmail.com", "outlook.com",
@@ -63,7 +66,12 @@ def sgd_site_candidates(conn) -> list[dict]:
                     out.setdefault(d, {"url": f"https://{d}/", "province_hint": row["province"],
                                        "brand_hint": p["center_name"],
                                        "discovered_from": f"email trong danh sách Sở: {row['source_url']}"})
-        site = website_domain(p.get("extra", {}).get("website"))
+        for token in re.split(r"[\s;,]+", str((p.get("extra") or {}).get("website") or "")):
+            site = website_domain(token) if "@" not in token else None
+            if site and _DOMAIN.fullmatch(site):
+                break
+        else:
+            site = None
         if site:
             out.setdefault(site, {"url": f"https://{site}/", "province_hint": row["province"],
                                   "brand_hint": p["center_name"],

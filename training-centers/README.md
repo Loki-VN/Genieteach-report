@@ -4,9 +4,26 @@ Thu thập, làm sạch, xác minh dữ liệu các trung tâm ngoại ngữ, lu
 tại 34 tỉnh/thành (đơn vị hành chính từ 01/7/2025). Kết quả cuối: SQLite + Excel đã khử trùng lặp;
 mỗi bản ghi có URL nguồn.
 
-Trạng thái: **GĐ0 — khảo sát nguồn**. Báo cáo: [`docs/GD0-khao-sat-nguon.md`](docs/GD0-khao-sat-nguon.md).
+Trạng thái: **GĐ2 — thu thập toàn quốc từ nguồn Sở + website** (Google Places chờ API key). Báo cáo: [`docs/GD0-khao-sat-nguon.md`](docs/GD0-khao-sat-nguon.md).
 
-## Cài đặt và chạy
+## Chạy toàn bộ trên máy ở Việt Nam (khuyến nghị)
+
+Nhiều website Sở GD&ĐT (`*.edu.vn`, `*.gov.vn`) ngắt kết nối từ máy chủ ở nước ngoài, nên chạy từ máy có IP Việt Nam
+sẽ lấy được nhiều tỉnh hơn. Cần Python 3.11+ (Windows: cài từ python.org, tick "Add python.exe to PATH").
+
+- **Windows:** nhấp đúp `run_all.bat`.
+- **macOS/Linux:** `./run_all.sh`.
+
+Script tự tạo môi trường, cài thư viện rồi chạy `python -m tcpipe run-all`, gồm:
+1. Nguồn Sở GD&ĐT của mọi tỉnh trong `config.yaml → sgd_sources`. Chạy 4 tỉnh song song; tỉnh đã `done` thì bỏ qua.
+2. Website chuỗi trung tâm trong `seeds/websites.json` và website suy ra từ email tổ chức trong danh sách Sở.
+3. Gộp và khử trùng lặp, rồi xuất `data/exports/trung-tam-<ngày>.xlsx`.
+
+Chạy lại bao nhiêu lần cũng được, mỗi lần chỉ làm tiếp phần chưa xong. `run_all.bat --refresh` chạy lại từ đầu.
+Nếu có sẵn `data/centers.sqlite` từ lần chạy trước, các tỉnh đã xong không phải tải lại.
+File nén RAR trong danh sách dạy thêm cần `unar` (macOS/Linux) hoặc 7-Zip (Windows) để đọc tự động.
+
+## Cài đặt và chạy từng lệnh
 
 Yêu cầu Python 3.11+ và máy có Internet ra các website `.gov.vn`, `.edu.vn` và website trung tâm.
 
@@ -24,6 +41,9 @@ python -m tcpipe normalize-address "12 Võ Văn Tần, P.5, Q.3, TP.HCM"
 python -m tcpipe purge-places-cache                        # xóa nội dung Google quá hạn lưu
 python -m tcpipe build                                     # gộp bản ghi nguồn → centers/branches/contacts_personal
 python -m tcpipe export                                    # build + xuất data/exports/trung-tam-<ngày>.xlsx
+python -m tcpipe run-all                                   # tất cả: Sở các tỉnh → website → build → Excel
+python -m tcpipe crawl-sites --file seeds/websites.json --from-sgd   # chỉ crawl website trung tâm
+python -m tcpipe inspect-url "<URL>" --province 37         # thử đọc một URL nguồn Sở, không ghi DB
 python -m pytest -q                                        # test chạy offline
 ```
 
@@ -45,12 +65,16 @@ tcpipe/
   status.py                 Suy ra operating_status
   probe.py                  Khảo sát GĐ0 (lưu bản ghi thô vào source_records, nhật ký vào source_log)
   build.py                  Khử trùng lặp + gộp thương hiệu → centers / branches / contacts_personal
-  export.py                 Xuất Excel: centers, branches, contacts_personal + dữ liệu thô + nhật ký nguồn
+  export.py                 Xuất Excel: centers, branches, contacts_personal + dữ liệu thô + nhật ký nguồn + độ phủ tỉnh
+  crawl.py                  Crawl website hàng loạt (song song theo domain, vẫn ≥ 2 giây/request/domain)
+  runall.py                 Lệnh run-all: chạy hết các nguồn, có checkpoint
   sources/
     sgd.py                  Nguồn 1 — danh sách/quyết định Sở GD&ĐT (HTML, Excel, PDF)
     business_registry.py    Nguồn 2 — ĐKDN (GĐ0 chỉ khảo sát robots/CAPTCHA/điều khoản)
     google_places.py        Nguồn 3 — Places API (New): Text Search, Details, đếm chi phí, chặn ngân sách
     websites.py             Nguồn 4+5 — website trung tâm và URL fanpage trên website
+seeds/websites.json         Danh sách website chuỗi trung tâm để crawl (gợi ý loại hình, tỉnh)
+run_all.bat / run_all.sh    Chạy toàn bộ trên Windows / macOS-Linux
 tools/build_admin_units.py  Đóng gói dữ liệu ĐVHC từ quangtam/vietnam-address-database (MIT)
 tests/                      Test offline (mock HTTP)
 ```

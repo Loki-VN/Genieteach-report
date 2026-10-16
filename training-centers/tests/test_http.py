@@ -84,3 +84,17 @@ def test_rate_limit_is_per_host_and_reserves_slots():
     c._wait_turn("a.vn", 2.0)
     c._wait_turn("a.vn", 2.0)          # lượt thứ 3 cùng host: chờ ~4s vì lượt 2 đã giữ chỗ
     assert len(slept) == 2 and 1.9 < slept[0] <= 2.0 and 3.9 < slept[1] <= 4.0
+
+
+def test_js_cookie_challenge_is_blocked(tmp_path):
+    body = b'<html><script>document.cookie="D1N=abc; path=/";location.reload();</script></html>'
+
+    def handler(req):
+        if req.url.path == "/robots.txt":
+            return httpx.Response(404)
+        return httpx.Response(200, content=body, headers={"content-type": "text/html"})
+
+    c = PoliteClient("ua", RawCache(tmp_path, 1), min_delay=0, transport=httpx.MockTransport(handler),
+                     sleep=lambda s: None)
+    with pytest.raises(BlockedError):
+        c.get("https://hue.example/")
