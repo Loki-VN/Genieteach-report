@@ -99,3 +99,15 @@ CREATE TABLE IF NOT EXISTS checkpoints (
     updated_at   TEXT NOT NULL,
     PRIMARY KEY (stage, province, source)
 );
+
+-- Nhật ký từng URL nguồn đã thử (để báo cáo coverage và lỗi).
+CREATE TABLE IF NOT EXISTS source_log (
+    log_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    province     TEXT,
+    source       TEXT NOT NULL,
+    url          TEXT NOT NULL,
+    outcome      TEXT NOT NULL,            -- ok | blocked | robots_disallow | unreachable | no_data
+    records      INTEGER,
+    detail       TEXT,
+    checked_at   TEXT NOT NULL
+);

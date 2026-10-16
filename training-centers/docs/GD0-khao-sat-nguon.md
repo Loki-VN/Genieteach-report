@@ -19,21 +19,60 @@ Ngày lập: 16/10/2026 · Phạm vi thử: **Hà Nội** và **Điện Biên** 
    **~840–875 USD (Enterprise)**. Khoảng giá tùy chạy trong 1 hay 2 tháng.
 4. **Điều khoản Google:** chỉ `place_id` được lưu lâu dài. Tên, địa chỉ, SĐT, website, số đánh giá
    lấy từ Google chỉ được cache tạm. Cần anh/chị chọn cách dùng (mục 9, câu 2).
-5. **Chưa thử trực tiếp được nguồn nào.** Chính sách mạng của môi trường cloud này chặn mọi host
-   `.gov.vn`, `.edu.vn` và website trung tâm (proxy trả 403). Riêng `places.googleapis.com` truy cập được,
-   nhưng chưa có API key. Phần khảo sát dưới đây dựa trên tìm kiếm web. Bộ lệnh `probe` đã sẵn sàng để chạy thật
-   ngay khi mở mạng (mục 8).
+5. **Đã chạy thật ngày 16/10/2026, sau khi mở mạng** (chi tiết ở mục 1b):
+   - Đọc được danh sách Sở của **Điện Biên** (PDF), **Sơn La** (bảng + Excel dữ liệu mở),
+     **Quảng Ninh** (PDF 163 dòng), cùng 10/12 website mẫu.
+   - Kết quả: **176 trung tâm, 235 cơ sở, 128 liên hệ cá nhân**, đã xuất Excel.
+   - **Danh sách Hà Nội chưa lấy được:** mọi file nằm trên `quantrisgd.shieldix.app`, mà robots.txt của host này
+     là `Disallow: /`.
+   - masothue.com cấm robot trong điều khoản nên đã loại. TP.HCM bị tường lửa chặn. Quảng Trị và Nghệ An
+     ngắt kết nối từ phía máy chủ.
+   - Chưa chạy Places vì chưa có API key.
 
 ## 1. Đã làm / chưa làm
 
 | Hạng mục | Trạng thái |
 |---|---|
-| Khảo sát cấu trúc nguồn, pháp lý, số liệu toàn quốc, bảng giá + điều khoản Places | Xong, qua tìm kiếm web (nguồn ở cuối) |
-| Khung dự án: config, crawler lịch sự, schema SQLite, module từng nguồn, CLI `probe` / `estimate-places` | Xong, 39 test offline đều chạy qua |
+| Khảo sát cấu trúc nguồn, pháp lý, số liệu toàn quốc, bảng giá + điều khoản Places | Xong (tìm kiếm web + chạy thật) |
+| Khung dự án: config, crawler lịch sự, schema SQLite, module từng nguồn, CLI `probe` / `build` / `export` | Xong, 47 test offline đều chạy qua |
 | Dữ liệu 34 tỉnh / 3.321 xã + ánh xạ xã cũ → mới | Xong (đóng gói từ dữ liệu mở, giấy phép MIT) |
-| Chạy `probe` thật cho Hà Nội, Điện Biên | **Bị chặn mạng** — mọi host trả `proxy 403`; checkpoint ghi `failed`/`skipped` |
-| Đọc robots.txt / điều khoản thật của từng trang | **Chưa** — cần mạng |
+| Chạy `probe` thật cho Hà Nội, Điện Biên (+ Sơn La, Quảng Ninh, Quảng Trị, Nghệ An, TP.HCM) | Xong — kết quả từng nguồn ở mục 1b |
+| Đọc robots.txt / điều khoản thật | Xong cho các host đã thử (mục 1b) |
 | Thử Places thật | **Chưa** — thiếu `GOOGLE_PLACES_API_KEY` |
+
+## 1b. Kết quả chạy thật (16/10/2026)
+
+| Nguồn | Kết quả | Ghi chú |
+|---|---|---|
+| Sở GD&ĐT Hà Nội | **Không lấy được** | robots.txt của `hanoi.edu.vn` cho phép đọc trang bài viết. Nhưng mọi file danh sách (.xlsx 10/2025, 9/2025, 6/2025, NĐ 125, kỹ năng 3/2025; .xls 2018) nằm trên `quantrisgd.shieldix.app`, mà robots.txt của host này là `User-agent: * / Disallow: /`. Trang bài viết không có bảng HTML. |
+| Sở GD&ĐT Điện Biên | 15 dòng (13 trong phạm vi) | TB 1458/TB-SGDĐT (21/5/2025). File PDF có bảng nhưng có vài byte rác trước `%PDF`; đã xử lý. Cột: tên TT, họ tên người đứng đầu, giới tính, SĐT, địa chỉ, số QĐ, ngày cấp, nội dung hoạt động. Mỗi trung tâm còn có quyết định riêng dạng PDF scan hoặc .rar, cần OCR/xử lý tay. |
+| Sở Sơn La (dữ liệu mở) | 30 dòng (bảng HTML 10 + Excel 20) | Cột: QĐ thành lập, QĐ cấp phép, địa chỉ, giám đốc, SĐT, liên hệ khác, trạng thái. robots cho phép tất cả. |
+| Sở Quảng Ninh | 163 dòng | PDF 12/2024. Cột: huyện, tên, địa chỉ, công ty chủ quản, QĐ thành lập, QĐ cấp phép, giám đốc (kèm QĐ công nhận), môn, email, SĐT, ghi chú (dừng hoạt động…). |
+| Sở Quảng Trị, Nghệ An | Không truy cập được | Máy chủ ngắt kết nối (reset / SSL EOF), có thể chặn IP nước ngoài. Không crawl khi không đọc được robots.txt. |
+| Sở TP.HCM | Bị chặn | Tường lửa (WAF) trả trang "Request Rejected" mang mã HTTP 200; pipeline đã nhận diện và bỏ qua. |
+| dangkykinhdoanh.gov.vn | Truy cập được | Không có robots.txt (404 = cho phép). Trang chủ không có CAPTCHA. Điều khoản không cấm truy cập tự động. Chưa thử tra cứu. |
+| masothue.com | **Loại** | Điều khoản cấm "robot, nhện máy (spiders) và/hoặc bất kỳ thiết bị tự động nào" và cấm dùng thương mại khi chưa có văn bản cho phép. |
+| hosocongty.vn | Không kết nối được | Lỗi chứng chỉ TLS phía máy chủ. |
+| 12 website mẫu (chuỗi lớn) | 10 đọc được, 2 bị chặn | ILA, IELTS Fighter dùng Cloudflare challenge nên bỏ qua. teky.edu.vn render bằng JS, cần Playwright. |
+
+Kết quả gộp (`python -m tcpipe export`):
+
+| | Số lượng |
+|---|---|
+| Trung tâm (thương hiệu) | 176: Quảng Ninh 137, Sơn La 17, Điện Biên 12, website 10 |
+| Cơ sở (branches) | 235 (87% ánh xạ được tới xã/phường mới) |
+| Liên hệ cá nhân | 128, đều là giám đốc/người đứng đầu có SĐT di động trong danh sách Sở. Website mẫu không công bố SĐT/email cá nhân. |
+| Tỷ lệ điền | tỉnh 98%, địa chỉ 96%, người đại diện 95%, số QĐ 91%, hotline 79%, pháp nhân 77%, email 55%, quy mô 24%, website 6% |
+| Tình trạng | likely_active 153, closed 15, active 6, suspended 2 |
+
+Lỗi đã gặp trên dữ liệu thật và đã sửa:
+- Gộp nhầm các trung tâm khác nhau cùng đuôi địa danh ("… Hạ Long"); nay bỏ địa danh ở cuối tên khi so khớp.
+- Đuôi hotline "1800 646448" bị hiểu thành số học viên.
+- Số học viên của 1 giáo viên/1 lớp bị coi là số của trung tâm.
+- Mã số thuế bị nhận thành SĐT.
+- Tên người bắt nhầm ("Apollo English", "Trường Phổ").
+- Link bài viết Facebook cá nhân bị coi là fanpage.
+- Chữ "khảo sát" khớp thành môn SAT.
 
 ## 2. Từng nguồn
 
@@ -237,30 +276,21 @@ Chi tiết và tham số ở [README](../README.md#công-thức-quy-mô) và `co
   "học viên / cơ sở", "học viên / GV", "học viên / đánh giá" để thay giá trị K, 25, 8.
   Các hệ số hiện tại là giả định khởi điểm, chưa có dữ liệu chống lưng.
 
-## 8. Điều kiện để chạy thật (trước GĐ1)
+## 8. Điều kiện còn thiếu trước GĐ1
 
-1. **Mạng:** môi trường cloud hiện chặn các host `.gov.vn`, `.edu.vn` và website trung tâm (ví dụ `hanoi.edu.vn`,
-   `dangkykinhdoanh.gov.vn`, `ila.edu.vn` đều bị proxy trả 403). Website trung tâm là hàng nghìn domain bất kỳ,
-   nên cần chọn một trong hai:
-   - **(a)** đổi Network access của môi trường sang mức truy cập đầy đủ. Vào menu môi trường cloud trên thanh
-     tiêu đề phiên → Edit → Network access; xem [hướng dẫn](https://code.claude.com/docs/en/cloud-environments#network-access).
-   - **(b)** chạy pipeline trên máy anh/chị theo README.
-2. **API key:** `GOOGLE_PLACES_API_KEY` có bật Places API (New), đặt trong `.env` (chạy local) hoặc biến môi trường
-   của môi trường cloud. Nên giới hạn key theo API và đặt budget alert trong Google Cloud.
-3. **Email liên hệ** cho User-Agent: `CRAWLER_CONTACT_EMAIL`.
-
-Sau khi có 1–3, chạy lại GĐ0 thật (khoảng 15 phút, dưới 20 request Places):
-
-```bash
-python -m tcpipe probe --province "Hà Nội"
-python -m tcpipe probe --province "Điện Biên"
-```
-
-Kết quả `reports/gd0/*/summary.md` sẽ xác nhận định dạng file, tỷ lệ điền từng cột, robots và điều khoản thật.
+1. **Mạng:** đã mở mức truy cập đầy đủ (16/10/2026); pipeline chạy trực tiếp trong môi trường cloud này.
+2. **API key:** chưa có `GOOGLE_PLACES_API_KEY`. Cần key có bật Places API (New), đặt vào biến môi trường của
+   môi trường cloud. Nên giới hạn key theo API và đặt cảnh báo ngân sách trong Google Cloud.
+3. **Email liên hệ** cho User-Agent: `CRAWLER_CONTACT_EMAIL` (hiện là `not-configured`).
+4. **Danh sách Hà Nội:** cần anh/chị quyết định cách lấy (mục 9, câu 1).
 
 ## 9. Cần anh/chị quyết định
 
-1. **Môi trường chạy:** mở mạng cho môi trường cloud này, hay chạy trên máy anh/chị?
+1. **Danh sách Sở GD&ĐT Hà Nội** (file trên `quantrisgd.shieldix.app`, bị robots.txt chặn toàn bộ):
+   - **(A, đề xuất)** Anh/chị tải tay 2–3 file Excel mới nhất từ trang của Sở rồi gửi tôi. Người dùng tải file
+     công khai không phải crawler. Tôi sẽ thêm lệnh nhập file cục bộ, ghi `source_url` là trang của Sở.
+   - **(B)** Anh/chị cho phép ngoại lệ robots.txt riêng cho host này (vài file, tải một lần). Phương án này đi
+     ngược quy tắc anh/chị đặt ra nên tôi không tự làm.
 2. **Dữ liệu Google trong kết quả cuối:**
    - **(A, đề xuất)** Google chỉ dùng để *khám phá và xác minh*. DB/Excel lâu dài chỉ giữ `place_id` (kèm link
      Google Maps tạo từ `place_id`) cùng dữ liệu đã xác minh từ Sở/ĐKDN/website.
@@ -269,10 +299,12 @@ Kết quả `reports/gd0/*/summary.md` sẽ xác nhận định dạng file, t�
 3. **Bậc Places:** Enterprise (~840–875 USD toàn quốc, đề xuất) hay Pro (~510–670 USD, mất website/SĐT/số đánh giá
    từ Google)? Ngân sách tháng tối đa là bao nhiêu?
 4. **Định nghĩa quy mô:** "đang theo học tại một thời điểm" (đề xuất) hay "học viên mỗi năm"? Đồng ý thêm bucket `XS` (< 100)?
-5. **Trang ĐKDN bên thứ ba** (masothue.com…): giữ tắt, hay cho phép tôi đọc điều khoản rồi đề xuất?
+5. **Trang ĐKDN bên thứ ba:** masothue.com đã bị loại vì điều khoản cấm robot. Có thử tra MST trên cổng quốc gia
+   `dangkykinhdoanh.gov.vn` ở GĐ1 không (khoảng 2 giây/lượt; dừng ngay nếu gặp CAPTCHA)?
 6. **Tỉnh nhỏ thử nghiệm:** Điện Biên (đề xuất) hay Sơn La (có cổng dữ liệu mở)?
-7. **SĐT trong danh sách Sở**, ghi cạnh tên giám đốc: đề xuất coi là hotline của trung tâm, vì Sở công bố như
-   SĐT liên hệ của trung tâm; không đưa vào `contacts_personal`.
+7. **SĐT trong danh sách Sở:** theo yêu cầu (đã thống nhất với pháp chế), file xuất đưa tên + SĐT di động của
+   giám đốc vào `contacts_personal` và vẫn dùng làm hotline của trung tâm. Cột `source_type` cho biết liên hệ
+   lấy từ danh sách Sở hay từ website.
 
 **Lưu ý pháp lý (không thay tư vấn luật):** Luật Bảo vệ dữ liệu cá nhân 2025 (số 91/2025/QH15, hiệu lực
 1/1/2026, thay NĐ 13/2023) cấm mua bán dữ liệu cá nhân. Dùng dữ liệu cá nhân cho tiếp thị phải đáp ứng điều kiện

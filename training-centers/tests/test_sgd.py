@@ -15,7 +15,7 @@ def test_find_links():
             '<a href="/x/1">Danh sách các Trung tâm ngoại ngữ, tin học tính đến tháng 9/2025</a>'
             '<a href="/tin-tuc">Tin tức</a>')
     att, lists = find_links(html, "https://hanoi.edu.vn/a/b")
-    assert att == [{"url": "https://hanoi.edu.vn/files/copy-of-danh-sach-ttnn-ca.xlsx", "text": "Tải về", "ext": "xlsx"}]
+    assert [(a["url"], a["ext"]) for a in att] == [("https://hanoi.edu.vn/files/copy-of-danh-sach-ttnn-ca.xlsx", "xlsx")]
     assert [l["url"] for l in lists] == ["https://hanoi.edu.vn/x/1"]
 
 
@@ -49,3 +49,15 @@ def test_html_table_columns():
     recs, meta = rows_to_records(rows, "u", "22")
     assert recs[0].district == "TP Hạ Long" and recs[0].legal_entity_name == "Công ty CP XYZ"
     assert recs[0].license_number == "88/QĐ-SGDĐT"
+
+
+def test_find_links_download_query_and_sidebar_ranking():
+    page = "https://dienbien.edu.vn/index.php/laws/detail/Thong-bao-528/"
+    html = ('<a href="/uploads/lich-tcd-2024.pdf">Lịch tiếp công dân năm 2024</a>'
+            '<a href="/index.php/laws/detail/Thong-bao-528/?download=1&amp;id=0"><img></a>'
+            '<a href="/index.php/laws/detail/Thong-bao-528/?download=1&amp;id=0">Tải về</a>'
+            '<a href="/x"><img></a><a href="/x">Danh sách các ngoại ngữ, tin học tháng 9/2025</a>')
+    att, lists = find_links(html, page)
+    assert att[0]["url"].endswith("?download=1&id=0") and att[0]["score"] > 0
+    assert att[-1]["url"].endswith("lich-tcd-2024.pdf") and att[-1]["score"] < 0
+    assert [l["url"] for l in lists] == ["https://dienbien.edu.vn/x"]

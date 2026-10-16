@@ -211,3 +211,33 @@ def wards_of(province_code: str) -> list[tuple[str, bool]]:
     """Xã/phường mới của tỉnh: (tên, là phường đô thị?)."""
     return [(name, name.startswith("Phường"))
             for name, pcode in _data()["wards"].values() if pcode == province_code]
+
+
+_UNIT_PREFIX = re.compile(r"^(tinh|thanh pho|quan|huyen|thi xa|thi tran|phuong|xa|dac khu)\s+")
+
+
+@lru_cache(maxsize=64)
+def location_names(province_code: str | None = None) -> frozenset[str]:
+    """Địa danh (bỏ dấu, bỏ tiền tố): tên tỉnh cũ/mới, quận/huyện cũ toàn quốc, xã/phường cũ+mới của tỉnh."""
+    d = _data()
+    names = {a for a in d["aliases"]}
+    names |= {_UNIT_PREFIX.sub("", k) for k in d["districts"]}
+    if province_code:
+        names |= {_UNIT_PREFIX.sub("", n) for n, _ in d["new_wards_by_prov"].get(province_code, [])}
+        names |= {_UNIT_PREFIX.sub("", w) for w, _, _ in d["old_wards"].get(province_code, [])}
+    return frozenset(n for n in names if len(n) >= 3 and not n.isdigit())
+
+
+def strip_location_suffix(folded: str, province_code: str | None = None) -> str:
+    """'shelton ha long' → 'shelton'; bỏ lặp các địa danh ở cuối tên."""
+    names = location_names(province_code)
+    words = folded.split()
+    changed = True
+    while changed and words:
+        changed = False
+        for k in (4, 3, 2, 1):
+            if len(words) > k and " ".join(words[-k:]) in names:
+                words = words[:-k]
+                changed = True
+                break
+    return " ".join(words)

@@ -26,6 +26,10 @@ _BRANCH_LABEL = re.compile(r"(?<![a-z])(?:co so|cs|chi nhanh|campus)\s*(?P<n>\d{
 _TEACHERS = re.compile(rf"(?:hon|tren|gan|over)?\s*{_NUM}\s*(?:giao vien|giang vien|teachers?|tutors?)(?![a-z])")
 _FOUNDED = re.compile(r"(?:thanh lap|ra doi|khai truong|founded|since|hoat dong tu)\s*(?:tu |vao |nam |tu nam |vao nam )*(?P<y>(?:19|20)\d{2})")
 
+_NOT_CENTER_LEVEL = re.compile(
+    r"nam giang day|nam kinh nghiem|giang day|thay |co giao|giao vien .{0,20}$|"
+    r"si so|moi lop|1 lop|mot lop|lop hoc|toi da|len den|chi tu|duoi"
+)
 _CUMULATIVE = re.compile(
     r"da dao tao|dao tao (?:hon|tren|cho)|da dong hanh|tinh den nay|tu khi thanh lap|cuu hoc vien|alumni|"
     r"luot hoc vien|da tin (?:tuong|chon)|da theo hoc|da va dang|trained|over the years"
@@ -75,6 +79,12 @@ def extract_claims(text: str, url: str | None = None) -> list[Claim]:
     for m in _LEARNERS.finditer(folded):
         value = _parse_number(m.group("num"), m.group("mult"))
         if not value or value < 20:
+            continue
+        before = folded[max(0, m.start("num") - 60): m.start("num")]
+        if re.search(r"\d[\s.]?$", before):               # "1800 646448 Student" → phần đuôi hotline
+            continue
+        clause = re.split(r"[.!?;\n]", before)[-1]          # chỉ xét trong cùng câu
+        if _NOT_CENTER_LEVEL.search(clause):                  # số của 1 giáo viên / sĩ số 1 lớp
             continue
         ctx = folded[max(0, m.start() - 70): m.end() + 50]
         if _CURRENT.search(ctx):

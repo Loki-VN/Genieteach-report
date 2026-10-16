@@ -37,3 +37,16 @@ def test_facebook_url():
 
 def test_name_key_strips_generic_words():
     assert name_key("Trung tâm Ngoại ngữ Apollo - Cơ sở Cầu Giấy") == name_key("APOLLO English cau giay")
+
+
+def test_facebook_only_page_roots():
+    assert normalize_facebook_url("https://www.facebook.com/lam.thao.916584/posts/pfbid02") is None
+    assert normalize_facebook_url("https://www.facebook.com/groups/285921646514717") is None
+    assert normalize_facebook_url("https://www.facebook.com/story.php?id=1") is None
+
+
+def test_tax_codes_from_website_footer():
+    from tcpipe.normalize import extract_tax_codes
+    assert extract_tax_codes("Công ty CP DOL. MST: 0315174306. GCN đăng ký doanh nghiệp số 0101234567-001") == \
+        ["0315174306"]
+    assert extract_tax_codes("Giấy chứng nhận đăng ký doanh nghiệp số 0101234567-001") == ["0101234567-001"]

@@ -70,3 +70,15 @@ def purge_expired_places(conn: sqlite3.Connection) -> int:
     cur = conn.execute("DELETE FROM places_cache WHERE expires_at < ?", (now_iso(),))
     conn.commit()
     return cur.rowcount
+
+
+def replace_source_records(conn: sqlite3.Connection, source: str, province: str | None) -> None:
+    """Chạy lại một nguồn cho một tỉnh thì thay toàn bộ bản ghi cũ của lần trước."""
+    conn.execute("DELETE FROM source_records WHERE source=? AND province IS ?", (source, province))
+    conn.execute("DELETE FROM source_log WHERE source IN (?, ?) AND province IS ?", (source, f"{source}_file", province))
+
+
+def log_source(conn: sqlite3.Connection, province: str | None, source: str, url: str, outcome: str,
+               records: int | None = None, detail: str | None = None) -> None:
+    conn.execute("INSERT INTO source_log(province, source, url, outcome, records, detail, checked_at) "
+                 "VALUES (?,?,?,?,?,?,?)", (province, source, url, outcome, records, detail, now_iso()))

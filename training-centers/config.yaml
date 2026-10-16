@@ -32,10 +32,10 @@ categories:
       "tiếng Anh": ["tieng anh", "anh ngu", "anh van", "english"]
       "tiếng Trung": ["tieng trung", "tieng hoa", "hoa ngu", "trung van", "chinese"]
       "tiếng Nhật": ["tieng nhat", "nhat ngu", "japanese", "nihongo"]
-      "tiếng Hàn": ["tieng han", "han ngu", "korean"]
+      "tiếng Hàn": ["tieng han", "korean"]
       "tiếng Pháp": ["tieng phap", "phap ngu", "francais", "french"]
       "tiếng Đức": ["tieng duc", "duc ngu", "deutsch", "german"]
-      "ngôn ngữ khác": ["tieng nga", "tieng tay ban nha", "tieng thai", "tieng y", "ngoai ngu"]
+      "ngôn ngữ khác": ["tieng nga", "tieng tay ban nha", "tieng thai", "tieng y "]
     places_queries:
       - "trung tâm tiếng Anh"
       - "trung tâm ngoại ngữ"
@@ -46,14 +46,14 @@ categories:
   luyen_thi:
     label: "luyện thi"
     subjects:
-      "IELTS": ["ielts"]
-      "TOEIC": ["toeic"]
-      "TOEFL": ["toefl"]
-      "SAT": [" sat ", "luyen thi sat"]
-      "HSK": ["hsk"]
-      "JLPT": ["jlpt"]
-      "TOPIK": ["topik"]
-      "vào lớp 10": ["vao lop 10", "vao 10", "on thi lop 10", "luyen thi lop 10"]
+      "IELTS": ["re:IELTS|[Ii]elts"]
+      "TOEIC": ["re:TOEIC|[Tt]oeic"]
+      "TOEFL": ["re:TOEFL"]
+      "SAT": ["re:\\bSAT\\b"]
+      "HSK": ["re:\\bHSK\\b"]
+      "JLPT": ["re:\\bJLPT\\b"]
+      "TOPIK": ["re:\\bTOPIK\\b"]
+      "vào lớp 10": ["vao lop 10", "thi vao 10", "on thi lop 10", "luyen thi lop 10"]
       "đại học": ["luyen thi dai hoc", "on thi dai hoc", "thi thpt", "danh gia nang luc", "dgnl"]
     places_queries:
       - "luyện thi IELTS"
@@ -63,9 +63,9 @@ categories:
   tin_hoc_stem:
     label: "tin học-STEM"
     subjects:
-      "tin học": ["tin hoc", "tin hoc van phong", "computer"]
+      "tin học": ["tin hoc", "tin hoc van phong", "computer", "cong nghe", "technology"]
       "lập trình": ["lap trinh", "coding", "code", "programming"]
-      "STEM/robotics": ["stem", "steam", "robotics", "robot"]
+      "STEM/robotics": ["re:\\bSTEA?M\\b", "robotics", "robot"]
     places_queries:
       - "trung tâm tin học"
       - "lập trình cho trẻ em"
@@ -87,27 +87,32 @@ sgd_sources:
   "01":   # Hà Nội — mục "Trung tâm ngoại trường" / "Dịch vụ giáo dục được cấp phép"
     - url: "https://hanoi.edu.vn/trung-tam-ngoai-truong/danh-sach-trung-tam-ngoai-ngu-tin-hoc-tinh-den-thang-102025/ctmb/1099/16600"
       kind: ngoai_ngu_tin_hoc
-      note: "Danh sách TT NN-TH đến 10/2025, file đính kèm .xlsx"
+      as_of: "2025-10-31"
+      note: "Danh sách TT NN-TH đến 10/2025, file .xlsx trên quantrisgd.shieldix.app (robots.txt: Disallow /)"
     - url: "https://hanoi.edu.vn/trung-tam-ngoai-truong/danh-sach-cac-trung-tam-boi-duong-ky-nang-tren-dia-ban-thanh-pho-tinh-den-thang/ct/1099/16114"
       kind: ky_nang
-      note: "Danh sách TT bồi dưỡng kỹ năng đến 3/2025"
+      as_of: "2025-03-31"
+      note: "Danh sách TT bồi dưỡng kỹ năng đến 3/2025 (file cùng host bị robots chặn)"
     - url: "https://hanoi.edu.vn/dich-vu-giao-duc-duoc-cap-phep/cmb/1120"
       kind: index
       note: "Trang mục lục; tìm bản danh sách mới hơn"
   "11":   # Điện Biên (tỉnh nhỏ, không sáp nhập) — đề xuất làm tỉnh thử
-    - url: "http://dienbien.edu.vn/index.php/laws/detail/Thong-bao-cac-trung-tam-ngoai-ngu-tin-hoc-co-so-giao-duc-ky-nang-song-to-chuc-tu-van-du-hoc-duoc-cho-phep-thanh-lap-hoat-dong-tinh-den-thang-5-nam-2025-528/"
+    - url: "https://dienbien.edu.vn/index.php/laws/detail/Thong-bao-cac-trung-tam-ngoai-ngu-tin-hoc-co-so-giao-duc-ky-nang-song-to-chuc-tu-van-du-hoc-duoc-cho-phep-thanh-lap-hoat-dong-tinh-den-thang-5-nam-2025-528/"
       kind: ngoai_ngu_tin_hoc
-      note: "TT NN-TH + cơ sở GD kỹ năng sống + tư vấn du học, đến 5/2025"
+      as_of: "2025-05-21"
+      note: "TB 1458/TB-SGDĐT: TT NN-TH + cơ sở GD kỹ năng sống + tư vấn du học, đến 5/2025 (PDF)"
   "14":   # Sơn La — cổng dữ liệu mở của tỉnh
     - url: "https://data.sonla.gov.vn/detail_data/du-lieu-danh-sach-cac-trung-tam-dao-tao-ngoai-ngu-tren-dia-ban"
       kind: ngoai_ngu_tin_hoc
-      note: "Dữ liệu mở, cập nhật 10/07/2024"
+      as_of: "2024-07-10"
+      note: "Dữ liệu mở, cập nhật 10/07/2024 (bảng HTML + .XLSX)"
   "22":   # Quảng Ninh
     - url: "https://www.quangninh.gov.vn/so/sogiaoducdaotao/Lists/TinTuc/Attachments/6164/12.2024%20danh%20sach%20TTNNTH%20(1).pdf"
       kind: ngoai_ngu_tin_hoc
-      note: "PDF 12/2024: huyện, tên TT, địa chỉ, công ty chủ quản, QĐ cho phép"
+      as_of: "2024-12-31"
+      note: "PDF 12/2024: huyện, tên TT, địa chỉ, công ty chủ quản, QĐ, giám đốc, môn, email, SĐT, ghi chú"
   "40":   # Nghệ An
-    - url: "http://nghean.edu.vn/menutop/tra-cuu/danh-sach-trung-tam-ngoai-ngu-tin-hoc"
+    - url: "https://nghean.edu.vn/menutop/tra-cuu/danh-sach-trung-tam-ngoai-ngu-tin-hoc"
       kind: ngoai_ngu_tin_hoc
   "44":   # Quảng Trị (cũ, trước sáp nhập với Quảng Bình)
     - url: "https://quangtri.edu.vn/trang-chu/tu-van-du-hoc/ngoai-ngu-tin-hoc/danh-sach-trung-tam-ngoai-ngu-tin-hoc-11.2024.html"

@@ -22,6 +22,8 @@ python -m tcpipe probe --province "Hà Nội"                 # GĐ0: thử từ
 python -m tcpipe probe --province "Điện Biên" --sources sgd,registry
 python -m tcpipe normalize-address "12 Võ Văn Tần, P.5, Q.3, TP.HCM"
 python -m tcpipe purge-places-cache                        # xóa nội dung Google quá hạn lưu
+python -m tcpipe build                                     # gộp bản ghi nguồn → centers/branches/contacts_personal
+python -m tcpipe export                                    # build + xuất data/exports/trung-tam-<ngày>.xlsx
 python -m pytest -q                                        # test chạy offline
 ```
 
@@ -41,7 +43,9 @@ tcpipe/
   classify.py               category/subjects, online/offline/hybrid
   scale.py                  Trích tín hiệu quy mô + quy đổi bucket
   status.py                 Suy ra operating_status
-  probe.py                  Khảo sát GĐ0
+  probe.py                  Khảo sát GĐ0 (lưu bản ghi thô vào source_records, nhật ký vào source_log)
+  build.py                  Khử trùng lặp + gộp thương hiệu → centers / branches / contacts_personal
+  export.py                 Xuất Excel: centers, branches, contacts_personal + dữ liệu thô + nhật ký nguồn
   sources/
     sgd.py                  Nguồn 1 — danh sách/quyết định Sở GD&ĐT (HTML, Excel, PDF)
     business_registry.py    Nguồn 2 — ĐKDN (GĐ0 chỉ khảo sát robots/CAPTCHA/điều khoản)
@@ -108,11 +112,18 @@ cậy một bậc và ghi cảnh báo vào `scale_evidence`. `scale_evidence` lu
    website HTTP 200 không bị park, hoạt động gần nhất ≤ 12 tháng).
 4. ≥ 1 tín hiệu tích cực → `likely_active`; còn lại → `unknown`. `status_evidence` luôn liệt kê các tín hiệu.
 
-## Khử trùng lặp (GĐ1)
+## Khử trùng lặp
 
-Khóa khớp theo thứ tự: MST → domain website (bỏ `www.`, bỏ host mạng xã hội/host dùng chung)
-→ SĐT đã chuẩn hóa → tên (bỏ từ chung như "trung tâm", "ngoại ngữ", "công ty TNHH") + địa chỉ, so
-khớp `rapidfuzz`. Các cơ sở của cùng thương hiệu gộp về một dòng `centers`, danh sách cơ sở ở `branches`.
+Khóa khớp theo thứ tự (`tcpipe/build.py`):
+1. MST;
+2. domain website (bỏ `www.`, bỏ host mạng xã hội/host dùng chung);
+3. SĐT đã chuẩn hóa **kèm** tên tương tự ≥ 60. SĐT trong danh sách Sở thường là số của giám đốc, mà một người
+   có thể đứng tên nhiều trung tâm;
+4. tên thương hiệu trong cùng tỉnh, so khớp `rapidfuzz` ≥ 92.
+
+Tên thương hiệu được chuẩn hóa trước khi so: bỏ từ chung ("trung tâm", "ngoại ngữ", "công ty TNHH"…), bỏ phần
+"chi nhánh …/cơ sở …", bỏ địa danh và số thứ tự ở cuối ("Shelton Hạ Long" → "shelton"), và lấy tên mới khi Sở
+ghi "đổi tên thành". Các cơ sở của cùng thương hiệu gộp về một dòng `centers`, danh sách cơ sở ở `branches`.
 Lưu ý: theo quy chế TT NN-TH, mỗi cơ sở của một chuỗi thường được cấp phép như một trung tâm riêng,
 nên danh sách Sở cần gộp theo đơn vị chủ quản/MST.
 

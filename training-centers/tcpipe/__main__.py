@@ -12,6 +12,19 @@ from .logsetup import setup_logging
 from .sources.google_places import estimate_cost, estimate_sweep
 
 
+EXPORT_NOTES = [
+    "Sheet centers / branches / contacts_personal: theo schema trong README; mỗi dòng có source_urls / source_url.",
+    "contacts_personal chứa dữ liệu cá nhân (tên, SĐT, email) lấy từ danh sách Sở GD&ĐT công bố công khai và từ "
+    "website trung tâm. Chỉ dùng theo mục đích đã được pháp chế phê duyệt; không chia sẻ ra ngoài; xóa khi hết mục đích.",
+    "Sheet nguon_so_gddt: dữ liệu thô từng dòng trong danh sách của Sở (kể cả dòng ngoài phạm vi như tư vấn du học, "
+    "cột in_scope = FALSE). Sheet nguon_website: dữ liệu thô từ website. Sheet nhat_ky_nguon: mọi URL đã thử và kết quả.",
+    "Phạm vi GĐ0: chỉ gồm các nguồn đọc được khi khảo sát (Điện Biên, Sơn La, Quảng Ninh + 10 website mẫu của "
+    "các chuỗi ở Hà Nội). Danh sách Hà Nội chưa có vì file nằm trên host chặn crawler bằng robots.txt; "
+    "Google Places chưa chạy vì chưa có API key.",
+    "Quy mô (scale_*): unknown khi chưa có tín hiệu — không loại bản ghi. Công thức xem README.",
+]
+
+
 def _province(name: str):
     p = resolve_province(name)
     if not p:
@@ -42,6 +55,10 @@ def main(argv: list[str] | None = None) -> None:
 
     sub.add_parser("purge-places-cache", help="xóa nội dung Places quá hạn lưu")
 
+    sub.add_parser("build", help="gộp bản ghi nguồn thành centers/branches/contacts_personal")
+    ex = sub.add_parser("export", help="build rồi xuất 1 file Excel (gồm cả liên hệ cá nhân)")
+    ex.add_argument("--out", help="đường dẫn .xlsx (mặc định data/exports/trung-tam-<ngày>.xlsx)")
+
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
     setup_logging(cfg.path("logs"))
@@ -66,6 +83,20 @@ def main(argv: list[str] | None = None) -> None:
             print(f"Text Search {tier}: ~{one} USD nếu chạy trong 1 tháng; ~{two} USD nếu chia 2 tháng")
     elif args.cmd == "normalize-address":
         print(json.dumps(normalize_address(args.address).__dict__, ensure_ascii=False, indent=2))
+    elif args.cmd in ("build", "export"):
+        from datetime import date
+        from pathlib import Path
+
+        from .build import build
+        from .export import export_excel
+
+        conn = db.connect(cfg.path("db"))
+        counts = build(conn, cfg)
+        print(f"Đã dựng: {counts}")
+        if args.cmd == "export":
+            out = Path(args.out) if args.out else cfg.path("db").parent / "exports" / f"trung-tam-{date.today()}.xlsx"
+            export_excel(conn, out, EXPORT_NOTES)
+            print(f"Đã xuất: {out}")
     elif args.cmd == "purge-places-cache":
         conn = db.connect(cfg.path("db"))
         print(f"Đã xóa {db.purge_expired_places(conn)} bản ghi Places quá hạn")

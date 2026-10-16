@@ -8,13 +8,14 @@ from __future__ import annotations
 import io
 import logging
 import re
+import zipfile
 from dataclasses import asdict, dataclass, field
 from urllib.parse import urljoin, urlsplit
 
 from selectolax.lexbor import LexborHTMLParser as HTMLParser
 
 from ..http import FetchError, PoliteClient
-from ..normalize import clean_text, fold, normalize_phone
+from ..normalize import clean_text, extract_emails, fold, normalize_phone
 
 log = logging.getLogger(__name__)
 
@@ -26,18 +27,24 @@ _LIST_LINK = re.compile(r"danh sach.*(trung tam|ngoai ngu|tin hoc|ky nang|co so 
 # Từ bắt đầu bằng "=" phải khớp nguyên ô; còn lại khớp theo cụm từ trong ô.
 COLUMNS: list[tuple[str, tuple[str, ...]]] = [
     ("stt", ("=stt", "=tt", "=so tt")),
+    ("establish_decision", ("qd cho phep thanh lap", "quyet dinh cho phep thanh lap", "quyet dinh thanh lap",
+                            "qd thanh lap")),
+    ("other_contact", ("lien he khac",)),
+    ("email", ("dia chi email", "email", "e-mail", "thu dien tu")),
+    ("scope", ("mon giang day", "mon hoc", "cho phep thanh lap", "noi dung hoat dong", "noi dung dao tao", "linh vuc", "hoat dong dao tao",
+               "chuong trinh dao tao")),
     ("legal_entity_name", ("don vi chu quan", "cong ty chu quan", "co quan chu quan", "to chuc thanh lap",
                            "chu dau tu", "don vi thanh lap", "ten doanh nghiep", "phap nhan")),
     ("director_name", ("giam doc", "nguoi dung dau", "nguoi dai dien", "ho ten", "ho va ten")),
     ("phone", ("dien thoai", "sdt", "so dt", "hotline", "=lien he")),
     ("license_date", ("ngay cap", "ngay ky", "ngay quyet dinh", "thoi gian cap phep", "ngay cho phep")),
-    ("license_number", ("quyet dinh", "so qd", "giay phep", "so hieu")),
+    ("license_number", ("qd cap phep", "quyet dinh", "so qd", "giay phep", "so hieu", "=qd")),
     ("address_raw", ("dia chi", "dia diem", "tru so", "noi dat")),
     ("center_name", ("ten trung tam", "ten co so", "ten don vi", "=trung tam", "=ten", "ten goi")),
     ("district", ("quan/huyen", "quan, huyen", "=huyen", "=quan", "huyen (tx, tp)", "huyen (thi xa")),
     ("status_text", ("trang thai", "tinh trang", "ghi chu")),
 ]
-_LICENSE_NO = re.compile(r"(\d{1,6})\s*/\s*((?:Q[\u0110D]|GP)[\w\-/&]*)", re.I)
+_LICENSE_NO = re.compile(r"(\d{1,6})\s*/\s*((?:Q[\u0110D]|GCN|GP|CN)[\w\-/&]*)", re.I)
 _DATE = re.compile(r"(\d{1,2})\s*[/.\-]\s*(\d{1,2})\s*[/.\-]\s*((?:19|20)\d{2})")
 
 
@@ -61,31 +68,60 @@ class SgdRecord:
     license_date: str | None = None
     license_issuer: str | None = None
     status_text: str | None = None
+    scope: str | None = None             # nội dung được phép hoạt động
+    establish_decision: str | None = None
+    other_contact: str | None = None
+    email: str | None = None
+    director_appointment: str | None = None   # QĐ công nhận giám đốc (nếu ghi kèm tên)
+    in_scope: bool = True                # False: tư vấn du học… (ngoài phạm vi nghiên cứu)
     extra: dict = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
 # Khám phá link
 # ---------------------------------------------------------------------------
+_ATTACH_HINT = re.compile(r"danh sach|danh-sach|trung tam|trung-tam|ngoai ngu|ngoai-ngu|tin hoc|ky nang|ttnn|tt-nn|"
+                          r"cap phep|cho phep|nd125|nd-125")
+_DOWNLOAD_QS = re.compile(r"[?&](download|pdf|file|attachment)=", re.I)
+
+
 def find_links(html: str, base_url: str) -> tuple[list[dict], list[dict]]:
-    """→ (file đính kèm, link tới trang danh sách khác)."""
+    """→ (file đính kèm, link tới trang danh sách khác).
+
+    File đính kèm gồm link có đuôi .xlsx/.pdf/… và link tải dạng '?download=1&id=N'. Sắp xếp theo
+    mức liên quan: thuộc chính bài viết (cùng đường dẫn) hoặc tên có từ khóa danh sách lên trước;
+    file ở thanh bên (lịch tiếp công dân…) xuống cuối.
+    """
     tree = HTMLParser(html)
-    attachments, lists = [], []
-    seen = set()
+    texts: dict[str, str] = {}
     for a in tree.css("a[href]"):
         href = (a.attributes.get("href") or "").strip()
         if not href or href.startswith(("javascript:", "mailto:", "tel:", "#")):
             continue
         url = urljoin(base_url, href)
-        if url in seen:
-            continue
-        seen.add(url)
         text = clean_text(a.text())
-        path = urlsplit(url).path.lower()
-        if path.endswith(ATTACHMENT_EXT) or re.search(r"\.(xlsx?|pdf|docx?)(?:$|\?|/)", url.lower()):
-            attachments.append({"url": url, "text": text, "ext": re.search(r"\.(xlsx?|pdf|docx?|csv)", url.lower()).group(1)})
+        if len(text) > len(texts.get(url, "")):
+            texts[url] = text
+        else:
+            texts.setdefault(url, text)
+    page_path = urlsplit(base_url).path
+    attachments, lists = [], []
+    for url, text in texts.items():
+        parts = urlsplit(url)
+        ext = re.search(r"\.(xlsx?|pdf|docx?|csv)$", parts.path.lower())
+        is_download = bool(_DOWNLOAD_QS.search("?" + parts.query)) and "download" in parts.query.lower()
+        if ext or is_download:
+            score = 0
+            if parts.path == page_path:
+                score += 3
+            if _ATTACH_HINT.search(fold(f"{text} {parts.path}")):
+                score += 2
+            if re.search(r"lich tiep|tiep cong dan|lich cong tac", fold(text)):
+                score -= 5
+            attachments.append({"url": url, "text": text, "ext": ext.group(1) if ext else "file", "score": score})
         elif _LIST_LINK.search(fold(text)):
             lists.append({"url": url, "text": text})
+    attachments.sort(key=lambda a: -a["score"])
     return attachments, lists
 
 
@@ -118,6 +154,7 @@ def xlsx_tables(content: bytes) -> list[list[list[str]]]:
 def pdf_tables(content: bytes) -> list[list[list[str]]]:
     import pdfplumber
 
+    content = content[content.find(b"%PDF"):]
     rows: list[list[str]] = []
     with pdfplumber.open(io.BytesIO(content)) as pdf:
         for page in pdf.pages:
@@ -130,7 +167,7 @@ def pdf_has_text(content: bytes) -> bool:
     """PDF scan (ảnh) không có lớp chữ → cần OCR, ghi nhận để xử lý tay."""
     import pdfplumber
 
-    with pdfplumber.open(io.BytesIO(content)) as pdf:
+    with pdfplumber.open(io.BytesIO(content[content.find(b"%PDF"):])) as pdf:
         return any((p.extract_text() or "").strip() for p in pdf.pages[:3])
 
 
@@ -157,11 +194,29 @@ def parse_license(text: str | None) -> tuple[str | None, str | None]:
     """'QĐ số 1234/QĐ-SGDĐT ngày 12/3/2024' → ('1234/QĐ-SGDĐT', '2024-03-12')."""
     if not text:
         return None, None
-    m = _LICENSE_NO.search(text)
+    m = _LICENSE_NO.search(re.sub(r"\s*-\s*", "-", text))   # "1170/QĐ- UBND" → "1170/QĐ-UBND"
     number = f"{m.group(1)}/{m.group(2)}" if m else None
     d = _DATE.search(text)
     date = f"{d.group(3)}-{int(d.group(2)):02d}-{int(d.group(1)):02d}" if d else None
     return number, date
+
+
+_STATUS_IN_CELL = [
+    (re.compile(r"dinh chi"), "đình chỉ"),
+    (re.compile(r"giai the|thu hoi|cham dut hoat dong"), "giải thể/thu hồi"),
+    (re.compile(r"dung hoat dong|ngung hoat dong|tam dung"), "dừng hoạt động"),
+]
+def _split_director(text: str | None) -> tuple[str | None, str | None]:
+    """'Đặng Thị Dư (670/QĐ-SGD ĐT ngày 17/6/2024)' → ('Đặng Thị Dư', '670/QĐ-SGD ĐT ngày 17/6/2024')."""
+    if not text:
+        return None, None
+    m = re.match(r"^\s*([^()]+?)\s*\((.*)\)?\s*$", text)
+    if m:
+        return clean_text(m.group(1)), clean_text(m.group(2).rstrip(")"))
+    return clean_text(text), None
+
+
+_OUT_OF_SCOPE = re.compile(r"tu van du hoc|van phong dai dien|du hoc")
 
 
 def rows_to_records(rows: list[list[str]], source_url: str, province_code: str,
@@ -170,8 +225,15 @@ def rows_to_records(rows: list[list[str]], source_url: str, province_code: str,
     if not found:
         return [], {"header": None}
     h, mapping = found
+    meta = {"header_row": h, "columns": {rows[h][j]: k for j, k in mapping.items()}}
     records = []
     for row in rows[h + 1:]:
+        again = detect_header([row], max_scan=1)       # bảng nhiều phần lặp lại dòng tiêu đề
+        if again:
+            mapping = again[1]
+            continue
+        if sum(1 for c in row if c) < 3:               # mảnh chữ do PDF tách dòng
+            continue
         values = {key: row[j] for j, key in mapping.items() if j < len(row) and row[j]}
         name = values.get("center_name")
         if not name or fold(name) in ("ten trung tam", "(2)", "2") or re.fullmatch(r"\(?\d+\)?", name):
@@ -179,39 +241,86 @@ def rows_to_records(rows: list[list[str]], source_url: str, province_code: str,
         number, date = parse_license(values.get("license_number"))
         number2, date2 = parse_license(values.get("license_date"))
         number = number or number2
+        status = values.get("status_text")
+        row_text = fold(" ".join(row))
+        for pattern, label in _STATUS_IN_CELL:
+            if pattern.search(row_text):
+                status = f"{label}: {status}" if status else label
+                break
+        director, appointment = _split_director(values.get("director_name"))
+        emails = extract_emails((values.get("email") or "").replace(" ", ""))
         rec = SgdRecord(
             center_name=name, source_url=source_url, province_code=province_code,
             legal_entity_name=values.get("legal_entity_name"), address_raw=values.get("address_raw"),
-            district=values.get("district"), director_name=values.get("director_name"),
+            district=values.get("district"), director_name=director, director_appointment=appointment,
+            email=emails[0] if emails else None,
             phone=normalize_phone(values.get("phone")), license_number=number or values.get("license_number"),
-            license_date=date2 or date, license_issuer=issuer, status_text=values.get("status_text"),
+            license_date=date2 or date, license_issuer=issuer, status_text=status, scope=values.get("scope"),
+            establish_decision=values.get("establish_decision"), other_contact=values.get("other_contact"),
+            in_scope=not _OUT_OF_SCOPE.search(fold(f"{name} {values.get('scope') or ''}")),
         )
         records.append(rec)
-    return records, {"header_row": h, "columns": {rows[h][j]: k for j, k in mapping.items()}}
+    return records, meta
 
 
 # ---------------------------------------------------------------------------
 # Khảo sát (GĐ0): tải trang nguồn, liệt kê định dạng, đọc thử bảng
 # ---------------------------------------------------------------------------
+def docx_tables(content: bytes) -> list[list[list[str]]]:
+    import docx
+
+    document = docx.Document(io.BytesIO(content))
+    tables = []
+    for t in document.tables:
+        rows = [[clean_text(c.text) for c in r.cells] for r in t.rows]
+        rows = [r for r in rows if any(r)]
+        if len(rows) >= 2:
+            tables.append(rows)
+    return tables
+
+
+def sniff_format(content: bytes, content_type: str, url: str) -> str:
+    """Nhận dạng định dạng theo chữ ký file (link tải '?download=1' không có đuôi)."""
+    head = content[:8]
+    if b"%PDF" in content[:1024]:          # có cổng chèn vài byte rác trước chữ ký %PDF
+        return "pdf"
+    if head.startswith(b"PK\x03\x04"):
+        names = zipfile.ZipFile(io.BytesIO(content)).namelist()
+        if any(n.startswith("xl/") for n in names):
+            return "xlsx"
+        if any(n.startswith("word/") for n in names):
+            return "docx"
+        return "zip"
+    if head.startswith(b"Rar!") or head.startswith(b"7z\xbc\xaf"):
+        return "rar/7z"         # file nén: cần giải nén thủ công
+    if head.startswith(b"\xd0\xcf\x11\xe0"):
+        return "ole"            # .xls / .doc đời cũ
+    ct = (content_type or "").lower()
+    if "html" in ct or content.lstrip()[:15].lower().startswith((b"<!doctype", b"<html")):
+        return "html"
+    return url.lower().rsplit(".", 1)[-1] if "." in url[-6:] else "unknown"
+
+
 def tables_from(content: bytes, content_type: str, url: str) -> tuple[str, list[list[list[str]]], list[str]]:
-    lower = url.lower()
+    fmt = sniff_format(content, content_type, url)
     notes = []
-    if "pdf" in content_type or lower.endswith(".pdf"):
+    if fmt == "pdf":
         if not pdf_has_text(content):
             notes.append("PDF scan không có lớp chữ — cần OCR/xử lý tay")
             return "pdf_scan", [], notes
         return "pdf", pdf_tables(content), notes
-    if "spreadsheet" in content_type or lower.endswith((".xlsx", ".xlsm")):
-        return "xlsx", xlsx_tables(content), notes
-    if lower.endswith((".xls", ".doc", ".docx")):
-        notes.append(f"Định dạng {lower.rsplit('.', 1)[-1]} chưa hỗ trợ đọc tự động")
-        return lower.rsplit(".", 1)[-1], [], notes
-    html = content.decode("utf-8", errors="replace")
-    return "html", html_tables(html), notes
+    if fmt == "xlsx":
+        return fmt, xlsx_tables(content), notes
+    if fmt == "docx":
+        return fmt, docx_tables(content), notes
+    if fmt == "html":
+        return fmt, html_tables(content.decode("utf-8", errors="replace")), notes
+    notes.append(f"Định dạng {fmt} chưa hỗ trợ đọc tự động")
+    return fmt, [], notes
 
 
 def probe_source(client: PoliteClient, url: str, province_code: str, issuer: str,
-                 follow: int = 3) -> dict:
+                 follow: int = 10) -> dict:
     out: dict = {"url": url, "robots_allowed": None, "pages": [], "records": 0, "samples": [], "errors": [],
                  "_records": []}
     try:
@@ -225,7 +334,7 @@ def probe_source(client: PoliteClient, url: str, province_code: str, issuer: str
         attachments, lists = find_links(page.text, page.final_url)
         out["attachments"] = attachments
         out["list_links"] = lists[:20]
-        for att in attachments[:follow]:
+        for att in [a for a in attachments if a["score"] > 0][:follow]:
             try:
                 queue.append((att["url"], client.get(att["url"])))
             except FetchError as e:

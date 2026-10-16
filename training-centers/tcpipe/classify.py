@@ -13,20 +13,38 @@ _ONLINE = re.compile(r"hoc (?:truc tuyen|online)|lop (?:truc tuyen|online)|e-?le
 _OFFLINE = re.compile(r"(?:co so|chi nhanh|dia chi|campus|phong hoc|hoc tai trung tam|lop truc tiep|offline)")
 
 
-def classify_subjects(text: str, categories: dict) -> tuple[str, list[str]]:
-    """Trả về (category chính, danh sách subjects) theo từ khóa trong config.yaml."""
+def _hits(text: str, categories: dict) -> dict[str, list[str]]:
+    """Khớp từ khóa. Từ khóa 're:…' là regex phân biệt hoa thường áp lên văn bản gốc (cho từ viết tắt
+    như SAT, HSK), còn lại so khớp trên văn bản đã bỏ dấu, chữ thường."""
     f = f" {fold(text)} "
     hits: dict[str, list[str]] = {}
     for key, cat in categories.items():
         for subject, keywords in cat["subjects"].items():
-            if any(k in f for k in keywords):
-                hits.setdefault(key, []).append(subject)
+            for k in keywords:
+                ok = re.search(k[3:], text) if k.startswith("re:") else k in f
+                if ok:
+                    hits.setdefault(key, []).append(subject)
+                    break
+    return hits
+
+
+def classify_subjects(text: str, categories: dict, title: str = "") -> tuple[str, list[str]]:
+    """Trả về (category chính, danh sách subjects) theo từ khóa trong config.yaml.
+
+    Category chính lấy theo tiêu đề/tên trung tâm nếu tiêu đề có từ khóa; nếu không thì theo
+    loại hình có nhiều môn khớp nhất trong nội dung.
+    """
+    hits = _hits(f"{title}\n{text}", categories)
     if not hits:
         return "khac", []
-    # luyện thi chứng chỉ ngoại ngữ (IELTS…) vẫn giữ category luyện thi nếu chỉ có môn thi
-    main = max(hits, key=lambda k: len(hits[k]))
-    subjects = [s for k in hits for s in hits[k]]
-    return main, list(dict.fromkeys(subjects))
+    subjects = list(dict.fromkeys(s for k in hits for s in hits[k]))
+    title_hits = _hits(title, categories) if title else {}
+    if title_hits:
+        order = list(categories)
+        if "luyen_thi" in title_hits and re.search(r"luyen thi|on thi", fold(title)) or set(title_hits) == {"luyen_thi"}:
+            return "luyen_thi", subjects
+        return min(title_hits, key=lambda k: (-len(title_hits[k]), order.index(k))), subjects
+    return max(hits, key=lambda k: len(hits[k])), subjects
 
 
 def delivery_mode(text: str) -> tuple[str, str]:

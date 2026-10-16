@@ -53,3 +53,9 @@ def test_disagreement_downgrades_confidence(cfg):
 def test_reviews_only_low(cfg):
     r = estimate_scale([], cfg["scale"], google_reviews_total=120)
     assert (r.estimate, r.bucket, r.confidence) == (960, "M", "low")
+
+
+def test_ignores_hotline_tail_and_teacher_or_class_level_numbers():
+    text = ("Bắt đầu học 1800 646448 Student Login. Thầy Rick 4 năm giảng dạy · Đồng hành cùng hơn 1.600 học viên. "
+            "Lớp học quy mô lên đến 20 học viên. Cộng đồng 219.364+ học viên")
+    assert [c.value for c in extract_claims(text) if c.kind.startswith("learners")] == [219364]

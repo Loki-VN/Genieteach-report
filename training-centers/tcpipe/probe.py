@@ -28,7 +28,9 @@ def probe_sgd(client: PoliteClient, cfg, prov: Province) -> dict:
     records = []
     for s in sources:
         res = sgd.probe_source(client, s["url"], prov.code, f"Sở GD&ĐT {prov.short_name}")
-        records.extend(res.pop("_records"))
+        for rec in res.pop("_records"):
+            rec.extra.update({"list_page": s["url"], "list_kind": s.get("kind"), "as_of": s.get("as_of")})
+            records.append(rec)
         res["kind"] = s.get("kind")
         out["sources"].append(res)
     norm = [normalize_address(r.address_raw, prov.name) for r in records if r.address_raw]
@@ -95,6 +97,50 @@ def probe_websites(client: PoliteClient, cfg, urls: list[str], limit: int) -> di
             "fill_rate": fill}
 
 
+def _outcome_of_error(err: str) -> str:
+    if "BlockedError" in err:
+        return "blocked"
+    if "robots.txt không cho phép" in err:
+        return "robots_disallow"
+    return "unreachable"
+
+
+RECORD_SOURCE = {"sgd": "sgd", "registry": "registry", "websites": "website", "places": "places"}
+
+
+def _store(conn, source: str, prov: Province, r: dict) -> None:
+    """Lưu bản ghi thô + nhật ký URL của một nguồn vào DB (thay lần chạy trước)."""
+    db.replace_source_records(conn, RECORD_SOURCE[source], prov.code)
+    if source == "sgd":
+        for rec in r.pop("_records", []):
+            db.add_source_record(conn, "sgd", prov.code, rec.source_url, asdict(rec))
+        for src in r.get("sources", []):
+            err = "; ".join(src["errors"])
+            outcome = _outcome_of_error(err) if src["errors"] and not src["records"] else (
+                "ok" if src["records"] else "no_data")
+            db.log_source(conn, prov.code, "sgd", src["url"], outcome, src["records"], err or None)
+            for page in src.get("pages", []):
+                if page["url"] != src["url"]:
+                    db.log_source(conn, prov.code, "sgd_file", page["url"], "ok" if page["tables"] else "no_data",
+                                  None, f"{page['format']} {'; '.join(page['notes'])}".strip())
+    elif source == "registry":
+        for p in r.get("portals", []):
+            outcome = "blocked" if p.get("blocked") else ("ok" if p.get("home_allowed") else "robots_disallow"
+                                                           if p.get("robots") == "ok" else "unreachable")
+            db.log_source(conn, prov.code, "registry", p["base_url"], outcome, None,
+                          f"robots={p['robots']}; captcha={p['captcha_on_page']}; điều khoản={p['terms_links'][:3]}")
+    elif source == "websites":
+        for site in r.get("sites", []):
+            url = site.get("final_url") or site["url"]
+            if site["alive"]:
+                db.add_source_record(conn, "website", prov.code, url, site)
+                db.log_source(conn, prov.code, "website", site["url"], "ok", len(site["pages"]))
+            else:
+                err = "; ".join(site["errors"]) or ("domain bị park" if site["parked"] else "")
+                db.log_source(conn, prov.code, "website", site["url"], _outcome_of_error(err), 0, err)
+    conn.commit()
+
+
 def run_probe(cfg, prov: Province, sources: list[str], *, site_urls: list[str], site_limit: int,
               places_tier: str, places_queries: int) -> Path:
     out_dir = cfg.path("reports") / "gd0" / prov.code
@@ -108,9 +154,6 @@ def run_probe(cfg, prov: Province, sources: list[str], *, site_urls: list[str], 
             try:
                 if source == "sgd":
                     r = probe_sgd(client, cfg, prov)
-                    for rec in r.pop("_records", []):
-                        db.add_source_record(conn, "sgd", prov.code, rec.source_url, asdict(rec))
-                    conn.commit()
                 elif source == "registry":
                     r = probe_registry(client, cfg)
                 elif source == "places":
@@ -120,6 +163,7 @@ def run_probe(cfg, prov: Province, sources: list[str], *, site_urls: list[str], 
                     r = probe_websites(client, cfg, site_urls, site_limit)
                 else:
                     raise ValueError(f"Nguồn không hỗ trợ: {source}")
+                _store(conn, source, prov, r)
                 result[source] = r
                 db.set_checkpoint(conn, "gd0", prov.code, source, _outcome(source, r))
             except Exception as e:   # ghi log, đánh dấu checkpoint, chạy tiếp nguồn khác

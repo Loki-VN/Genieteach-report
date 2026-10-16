@@ -60,6 +60,8 @@ def normalize_phone(raw: str | None) -> str | None:
     digits = re.sub(r"\D", "", raw)
     if digits.startswith("84") and len(digits) in (11, 12):
         digits = "0" + digits[2:]
+    elif len(digits) == 9 and digits[0] in "35789" or len(digits) == 10 and digits[0] == "2":
+        digits = "0" + digits                      # số bị mất 0 đầu (Excel/PDF)
     if digits.startswith(("1900", "1800")) and len(digits) in (8, 10):
         return digits
     if len(digits) == 10 and digits.startswith(_MOBILE_PREFIX):
@@ -150,7 +152,8 @@ def website_domain(url: str | None) -> str | None:
     return host
 
 
-_FB_SKIP = re.compile(r"/(sharer|share|plugins|dialog|tr|login|groups/?$|hashtag)(/|\.php|\?|$)", re.I)
+_FB_SKIP = re.compile(r"/(sharer|share|plugins|dialog|tr|login|groups|hashtag|story\.php|permalink\.php|watch|events|"
+                      r"reel|photo\.php|photos|videos|posts|search|help|policies|privacy)(/|\.php|\?|$)", re.I)
 
 
 def normalize_facebook_url(url: str | None) -> str | None:
@@ -161,6 +164,21 @@ def normalize_facebook_url(url: str | None) -> str | None:
     if _FB_SKIP.search(parts.path or "") or parts.path in ("", "/"):
         return None
     path = parts.path.rstrip("/")
-    if path.endswith("profile.php") and parts.query:
-        return f"https://www.facebook.com/profile.php?{parts.query.split('&')[0]}"
-    return f"https://www.facebook.com{path}"
+    if path.endswith("profile.php"):
+        q = re.search(r"(?:^|&)(id=\d+)", parts.query or "")
+        return f"https://www.facebook.com/profile.php?{q.group(1)}" if q else None
+    if path.startswith("/pages/"):          # /pages/Ten-Trang/123456 → giữ nguyên
+        return f"https://www.facebook.com{path}"
+    handle = path.strip("/").split("/")[0]
+    return f"https://www.facebook.com/{handle}" if handle else None
+
+
+_TAX_CODE = re.compile(
+    r"(?:mst|ma so thue|ma so doanh nghiep|ma doanh nghiep|gpkd|dkkd|giay chung nhan dang ky (?:doanh nghiep|kinh doanh))"
+    r"\s*(?:so)?\s*[:.]?\s*(\d{10}(?:-\d{3})?)"
+)
+
+
+def extract_tax_codes(text: str) -> list[str]:
+    """MST/mã số doanh nghiệp ghi trên website (10 số, hoặc 10 số + '-xxx' cho chi nhánh)."""
+    return list(dict.fromkeys(m.group(1) for m in _TAX_CODE.finditer(fold(text))))

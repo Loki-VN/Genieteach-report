@@ -63,3 +63,14 @@ def test_challenge_page_is_blocked_not_bypassed(tmp_path):
         c.get("https://d.vn/cf")
     # trang thường có reCAPTCHA ở form liên hệ không bị coi là chặn
     assert c.get("https://d.vn/lien-he").status == 200
+
+
+def test_waf_rejection_with_http_200_is_blocked(tmp_path):
+    def handler(req):
+        if req.url.path == "/robots.txt":
+            return httpx.Response(404)
+        return httpx.Response(200, text="<html><head><title>Request Rejected</title></head><body>x</body></html>")
+
+    c = make_client(handler, tmp_path, [])
+    with pytest.raises(BlockedError):
+        c.get("https://e.vn/list")

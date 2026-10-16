@@ -60,3 +60,10 @@ def test_parked_domain(tmp_path, cfg):
                               headers={"content-type": "text/html"})
     r = crawl_site(client(tmp_path, parked), "https://abc.edu.vn/", cfg["categories"])
     assert r.parked and r.alive is False
+
+
+def test_person_requires_vietnamese_surname_or_honorific():
+    from tcpipe.sources.websites import _persons
+    text = ("Đồng sáng lập Apollo English. Hiệu trưởng Trường Phổ thông ABC. CEO Lê Đình Lực.\n"
+            "Founder Mr. John Smith")
+    assert [(p["name"], p["title"]) for p in _persons(text, "u")] == [("Lê Đình Lực", "CEO"), ("John Smith", "Founder")]

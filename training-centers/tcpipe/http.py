@@ -31,7 +31,7 @@ _CHALLENGE_MARKERS = re.compile(
     re.I,
 )
 _CHALLENGE_TITLE = re.compile(
-    r"just a moment|attention required|captcha|access denied|verify you are human|"
+    r"just a moment|attention required|captcha|access denied|verify you are human|request rejected|incapsula|"
     r"x\u00e1c minh|ki\u1ec3m tra b\u1ea3o m\u1eadt",
     re.I,
 )
@@ -190,6 +190,7 @@ class PoliteClient:
         if use_cache and self.cache:
             hit = self.cache.get(url)
             if hit:
+                self._raise_if_blocked(hit)
                 return hit
         r = self._request(url, check_robots=True, check_block=True)
         if self.cache and r.status == 200:

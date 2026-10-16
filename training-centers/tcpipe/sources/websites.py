@@ -16,8 +16,8 @@ from selectolax.lexbor import LexborHTMLParser as HTMLParser
 
 from ..classify import classify_subjects, delivery_mode
 from ..http import FetchError, PoliteClient
-from ..normalize import (clean_text, extract_emails, extract_phones, fold, host_of, is_role_email,
-                         normalize_facebook_url, normalize_phone)
+from ..normalize import (clean_text, extract_emails, extract_phones, extract_tax_codes, fold, host_of,
+                         is_role_email, normalize_facebook_url, normalize_phone)
 from ..scale import Claim, extract_claims, extract_founded_year
 
 log = logging.getLogger(__name__)
@@ -34,14 +34,23 @@ _PARKED = re.compile(r"domain (?:is )?for sale|this domain (?:may be|is) for sal
                      r"website (?:da|dang) (?:het han|tam ngung)|account suspended|default web site page")
 _STREET_HINT = re.compile(r"(?<![a-z])(so \d|\d+[a-z]?(?:/\d+)*\s|duong|pho|ngo|ngach|hem|kiet|tang|toa|kdt|lo [a-z]?\d|thon|ap|to \d)")
 _AREA_HINT = re.compile(r"(?<![a-z])(phuong|quan|huyen|xa|thi xa|thi tran|tp\.?|thanh pho|tinh|p\.|q\.|tx\.?)(?![a-z])")
-_BRANCH_LABEL = re.compile(r"^(?:co so|cs|chi nhanh|campus|dia chi|tru so|van phong|address)\s*\d*\s*[:.\-–]?\s*")
+_BRANCH_LABEL = re.compile(r"^(?:co so|cs|chi nhanh|campus|dia chi|tru so(?: chinh)?(?: tai)?|van phong|address)"
+                           r"\s*\d*\s*[:.\-–]?\s*")
+_LOWER = "a-zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ"
+_UPPER = "A-ZĐÂĂÊÔƠƯÁÀẢÃẠÉÈẺẼẸÍÌỈĨỊÓÒỎÕỌÚÙỦŨỤÝỲỶỸỴ"
 _PERSON = re.compile(
-    r"(?P<title>Giám đốc|Tổng giám đốc|Phó giám đốc|Founder|Co-?founder|CEO|Nhà sáng lập|Đồng sáng lập|Hiệu trưởng|"
-    r"Người đại diện(?: theo pháp luật)?|Chủ tịch)\s*(?:điều hành\s*)?[:\-–]?\s*"
-    r"(?P<honor>Ông|Bà|ThS\.?|TS\.?|PGS\.?\s*TS\.?|Mr\.?|Ms\.?|Mrs\.?)?\s*"
-    r"(?P<name>[A-ZĐÂĂÊÔƠƯÁÀẢÃẠ][a-zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]+"
-    r"(?:\s+[A-ZĐÂĂÊÔƠƯÁÀẢÃẠÉÍÓÚÝ][a-zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]+){1,4})"
+    r"(?P<title>Tổng giám đốc|Phó giám đốc|Giám đốc|Founder|Co-?founder|CEO|Nhà sáng lập|Đồng sáng lập|Hiệu trưởng|"
+    r"Người đại diện(?: theo pháp luật)?|Chủ tịch)[ \t]*(?:điều hành[ \t]*)?[:\-–]?[ \t]*"
+    r"(?P<honor>Ông|Bà|ThS\.?|TS\.?|PGS\.?[ \t]*TS\.?|Mr\.?|Ms\.?|Mrs\.?)?[ \t]*"
+    rf"(?P<name>[{_UPPER}][{_LOWER}]+(?:[ \t]+[{_UPPER}][{_LOWER}]+){{1,4}})"
 )
+# Họ phổ biến: tên không có kính ngữ thì phải bắt đầu bằng một họ để tránh bắt nhầm
+# "Đồng sáng lập Apollo English", "Hiệu trưởng Trường Phổ thông"…
+_SURNAMES = set("""nguyen tran le pham hoang huynh phan vu vo dang bui do ho ngo duong ly dao doan vuong trinh
+truong lam phung mai to ha cao ta luong dinh chu kieu thai luu la quach tu trieu nghiem tang chau khuc mac au than
+kim lai tong doan dam dong bach hua giang tieu nong lo luc hau diep phuong quan ninh ong la vi han cu sam ton
+khong lang yen thach chung cong hong ung""".split())
+_NOT_NAME = re.compile(r"^(truong|trung|cong|nhom|he|hoc|anh|tieng|tap|to|vien|so|phong|ban)\b")
 _DATE_DMY = re.compile(r"(?<!\d)(\d{1,2})[/.\-](\d{1,2})[/.\-]((?:20)\d{2})(?!\d)")
 _DATE_ISO = re.compile(r"(?<!\d)(20\d{2})-(\d{2})-(\d{2})")
 # <meta property="article:modified_time" content="…">, JSON-LD "dateModified": "…", <time datetime="…">
@@ -57,12 +66,14 @@ class SiteResult:
     parked: bool = False
     pages: list[str] = field(default_factory=list)
     title: str | None = None
+    site_name: str | None = None                                         # og:site_name
     phones: list[tuple[str, str]] = field(default_factory=list)          # (số, url)
     emails: list[tuple[str, str]] = field(default_factory=list)          # (email, url) — email chung
     fanpage_urls: list[str] = field(default_factory=list)
     branch_addresses: list[tuple[str, str]] = field(default_factory=list)  # (địa chỉ gốc, url)
     persons: list[dict] = field(default_factory=list)                    # {name,title,phone,email,source_url}
     claims: list[Claim] = field(default_factory=list)
+    tax_codes: list[str] = field(default_factory=list)
     founded_year: int | None = None
     last_activity_date: str | None = None
     category: str | None = None
@@ -118,10 +129,14 @@ def _branch_addresses(text: str) -> list[str]:
 def _persons(text: str, url: str) -> list[dict]:
     people = []
     for m in _PERSON.finditer(text):
+        name = m.group("name").strip()
+        f = fold(name)
+        if not m.group("honor") and (f.split()[0] not in _SURNAMES or _NOT_NAME.match(f)):
+            continue
         window = text[max(0, m.start() - 40): m.end() + 120]
-        phones = extract_phones(window)
+        phones = [p for p in extract_phones(window) if p not in extract_tax_codes(window)]
         emails = [e for e in extract_emails(window) if not is_role_email(e)]
-        people.append({"name": m.group("name").strip(), "title": m.group("title"),
+        people.append({"name": name, "title": m.group("title"),
                        "phone": phones[0] if phones else None, "email": emails[0] if emails else None,
                        "source_url": url})
     return people
@@ -160,6 +175,8 @@ def crawl_site(client: PoliteClient, url: str, categories: dict, max_pages: int 
     tree, text = page_text(home.text)
     title = tree.css_first("title")
     res.title = clean_text(title.text()) if title else None
+    site_name = tree.css_first('meta[property="og:site_name"]') or tree.css_first('meta[name="application-name"]')
+    res.site_name = clean_text(site_name.attributes.get("content")) if site_name else None
     if _PARKED.search(fold(text[:3000] + " " + (res.title or ""))) or len(text) < 200 and "domain" in fold(text):
         res.parked, res.alive = True, False
         return res
@@ -196,7 +213,11 @@ def crawl_site(client: PoliteClient, url: str, categories: dict, max_pages: int 
                 if fb and fb not in seen_fb:
                     seen_fb.add(fb)
                     res.fanpage_urls.append(fb)
+        taxes = extract_tax_codes(txt)
+        res.tax_codes.extend(t for t in taxes if t not in res.tax_codes)
         for p in extract_phones(txt):
+            if p in taxes or p.split("-")[0] in {t.split("-")[0] for t in taxes}:
+                continue
             if p not in seen_phone:
                 seen_phone.add(p)
                 res.phones.append((p, page_url))
@@ -220,6 +241,7 @@ def crawl_site(client: PoliteClient, url: str, categories: dict, max_pages: int 
     joined = "\n".join(all_text)
     res.founded_year = extract_founded_year(joined)
     res.last_activity_date = max(dates).isoformat() if dates else None
-    res.category, res.subjects = classify_subjects(f"{res.title or ''}\n{joined[:20000]}", categories)
+    res.category, res.subjects = classify_subjects(f"{res.title or ''}\n{joined[:20000]}", categories,
+                                                   title=res.title or "")
     res.delivery_mode, res.delivery_mode_evidence = delivery_mode(joined)
     return res
