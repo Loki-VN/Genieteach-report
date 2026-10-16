@@ -151,6 +151,26 @@ def xlsx_tables(content: bytes) -> list[list[list[str]]]:
     return tables
 
 
+def xls_tables(content: bytes) -> list[list[list[str]]]:
+    """Excel 97-2003 (.xls)."""
+    import xlrd
+
+    book = xlrd.open_workbook(file_contents=content)
+    tables = []
+    for sh in book.sheets():
+        rows = [[clean_text(_xls_cell(v)) for v in sh.row_values(i)] for i in range(sh.nrows)]
+        rows = [r for r in rows if any(r)]
+        if rows:
+            tables.append(rows)
+    return tables
+
+
+def _xls_cell(v) -> str:
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return "" if v is None else str(v)
+
+
 def pdf_tables(content: bytes) -> list[list[list[str]]]:
     import pdfplumber
 
@@ -313,6 +333,12 @@ def tables_from(content: bytes, content_type: str, url: str) -> tuple[str, list[
         return fmt, xlsx_tables(content), notes
     if fmt == "docx":
         return fmt, docx_tables(content), notes
+    if fmt == "ole":
+        try:
+            return "xls", xls_tables(content), notes
+        except Exception:      # không phải .xls → .doc đời cũ
+            notes.append("File .doc (Word 97-2003) chưa hỗ trợ đọc tự động — cần mở tay")
+            return "doc", [], notes
     if fmt == "html":
         return fmt, html_tables(content.decode("utf-8", errors="replace")), notes
     notes.append(f"Định dạng {fmt} chưa hỗ trợ đọc tự động")
@@ -320,7 +346,9 @@ def tables_from(content: bytes, content_type: str, url: str) -> tuple[str, list[
 
 
 def probe_source(client: PoliteClient, url: str, province_code: str, issuer: str,
-                 follow: int = 10) -> dict:
+                 follow: int = 10, follow_lists: int = 5) -> dict:
+    """Đọc một URL nguồn Sở: chính trang đó, các file đính kèm liên quan; nếu chưa ra bản ghi nào thì đi
+    tiếp tối đa `follow_lists` trang danh sách được link tới (một tầng) và file đính kèm của chúng."""
     out: dict = {"url": url, "robots_allowed": None, "pages": [], "records": 0, "samples": [], "errors": [],
                  "_records": []}
     try:
@@ -329,25 +357,50 @@ def probe_source(client: PoliteClient, url: str, province_code: str, issuer: str
     except FetchError as e:
         out["errors"].append(f"{type(e).__name__}: {e}")
         return out
-    queue = [(url, page)]
-    if "html" in page.content_type:
-        attachments, lists = find_links(page.text, page.final_url)
-        out["attachments"] = attachments
-        out["list_links"] = lists[:20]
-        for att in [a for a in attachments if a["score"] > 0][:follow]:
+    all_records: list[SgdRecord] = []
+    seen = {url}
+
+    def fetch_attachments(html: str, base: str, limit: int) -> tuple[list, list[dict]]:
+        attachments, lists = find_links(html, base)
+        got = []
+        for att in [a for a in attachments if a["score"] > 0 and a["url"] not in seen][:limit]:
+            seen.add(att["url"])
             try:
-                queue.append((att["url"], client.get(att["url"])))
+                got.append((att["url"], client.get(att["url"])))
             except FetchError as e:
                 out["errors"].append(f"{att['url']}: {type(e).__name__}: {e}")
-    all_records: list[SgdRecord] = []
-    for src_url, res in queue:
-        fmt, tables, notes = tables_from(res.content, res.content_type, src_url)
-        info = {"url": src_url, "format": fmt, "http_status": res.status, "tables": len(tables), "notes": notes}
-        for t in tables:
-            recs, meta = rows_to_records(t, src_url, province_code, issuer)
-            info.setdefault("headers", []).append(meta)
-            all_records.extend(recs)
-        out["pages"].append(info)
+        return got, (attachments, lists)
+
+    def parse(queue: list) -> None:
+        for src_url, res in queue:
+            fmt, tables, notes = tables_from(res.content, res.content_type, src_url)
+            info = {"url": src_url, "format": fmt, "http_status": res.status, "tables": len(tables), "notes": notes}
+            for t in tables:
+                recs, meta = rows_to_records(t, src_url, province_code, issuer)
+                info.setdefault("headers", []).append(meta)
+                all_records.extend(recs)
+            out["pages"].append(info)
+
+    queue = [(url, page)]
+    lists: list[dict] = []
+    if "html" in page.content_type:
+        got, (attachments, lists) = fetch_attachments(page.text, page.final_url, follow)
+        out["attachments"] = attachments
+        out["list_links"] = lists[:20]
+        queue += got
+    parse(queue)
+    if not all_records and follow_lists:
+        for lst in [x for x in lists if x["url"] not in seen][:follow_lists]:
+            seen.add(lst["url"])
+            try:
+                sub = client.get(lst["url"])
+            except FetchError as e:
+                out["errors"].append(f"{lst['url']}: {type(e).__name__}: {e}")
+                continue
+            more = [(lst["url"], sub)]
+            if "html" in sub.content_type:
+                more += fetch_attachments(sub.text, sub.final_url, follow)[0]
+            parse(more)
     out["records"] = len(all_records)
     out["samples"] = [asdict(r) for r in all_records[:5]]
     filled = {}

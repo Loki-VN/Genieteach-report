@@ -134,13 +134,14 @@ class PoliteClient:
 
     # -- rate limit --------------------------------------------------------
     def _wait_turn(self, host: str, delay: float) -> None:
+        """Giữ chỗ lượt request kế tiếp cho host rồi ngủ ngoài khóa: các host khác chạy song song được."""
         with self._lock:
+            now = time.monotonic()
             last = self._last.get(host)
-            if last is not None:
-                remaining = delay - (time.monotonic() - last)
-                if remaining > 0:
-                    self._sleep(remaining)
-            self._last[host] = time.monotonic()
+            slot = now if last is None else max(now, last + delay)
+            self._last[host] = slot
+        if slot - now > 0:
+            self._sleep(slot - now)
 
     # -- robots.txt (RFC 9309) ---------------------------------------------
     def robots_status(self, url: str) -> tuple[RobotFileParser | None, str]:

@@ -55,6 +55,22 @@ def main(argv: list[str] | None = None) -> None:
 
     sub.add_parser("purge-places-cache", help="xóa nội dung Places quá hạn lưu")
 
+    cs = sub.add_parser("crawl-sites", help="crawl hàng loạt website trung tâm (song song theo domain)")
+    cs.add_argument("--file", help="JSON [{url, province_hint?, brand_hint?, discovered_from?}] hoặc .txt mỗi dòng 1 URL")
+    cs.add_argument("--from-sgd", action="store_true", help="thêm website suy từ email tổ chức trong danh sách Sở")
+    cs.add_argument("--workers", type=int, default=6)
+    cs.add_argument("--recrawl", action="store_true", help="crawl lại cả URL đã có trong nhật ký")
+
+    ra = sub.add_parser("run-all", help="chạy hết: nguồn Sở các tỉnh → website → build → xuất Excel")
+    ra.add_argument("--province", action="append", help="chỉ chạy các tỉnh này (mặc định: mọi tỉnh có nguồn trong config)")
+    ra.add_argument("--refresh", action="store_true", help="chạy lại cả tỉnh/website đã xong")
+    ra.add_argument("--workers", type=int, default=4, help="số tỉnh chạy song song")
+    ra.add_argument("--out", help="đường dẫn .xlsx")
+
+    iu = sub.add_parser("inspect-url", help="thử đọc một URL nguồn Sở (robots, định dạng, bảng, bản ghi) — không ghi DB")
+    iu.add_argument("url")
+    iu.add_argument("--province", default="00")
+
     sub.add_parser("build", help="gộp bản ghi nguồn thành centers/branches/contacts_personal")
     ex = sub.add_parser("export", help="build rồi xuất 1 file Excel (gồm cả liên hệ cá nhân)")
     ex.add_argument("--out", help="đường dẫn .xlsx (mặc định data/exports/trung-tam-<ngày>.xlsx)")
@@ -97,6 +113,49 @@ def main(argv: list[str] | None = None) -> None:
             out = Path(args.out) if args.out else cfg.path("db").parent / "exports" / f"trung-tam-{date.today()}.xlsx"
             export_excel(conn, out, EXPORT_NOTES)
             print(f"Đã xuất: {out}")
+    elif args.cmd == "run-all":
+        from pathlib import Path
+
+        from .runall import run_all
+
+        codes = [_province(n).code for n in args.province] if args.province else None
+        rep = run_all(cfg, provinces=codes, refresh=args.refresh, workers=args.workers,
+                      out=Path(args.out) if args.out else None, notes=EXPORT_NOTES)
+        print(json.dumps(rep, ensure_ascii=False, indent=1))
+    elif args.cmd == "crawl-sites":
+        from pathlib import Path
+
+        from .crawl import crawl_sites, sgd_site_candidates
+
+        entries = []
+        if args.file:
+            text = Path(args.file).read_text(encoding="utf-8")
+            if args.file.endswith(".json"):
+                entries += [e if isinstance(e, dict) else {"url": e} for e in json.loads(text)]
+            else:
+                entries += [{"url": line.strip(), "discovered_from": args.file}
+                            for line in text.splitlines() if line.strip() and not line.startswith("#")]
+        if args.from_sgd:
+            conn = db.connect(cfg.path("db"))
+            entries += sgd_site_candidates(conn)
+            conn.close()
+        print(json.dumps(crawl_sites(cfg, entries, args.workers, skip_done=not args.recrawl), ensure_ascii=False))
+    elif args.cmd == "inspect-url":
+        from .http import PoliteClient
+        from .sources import sgd
+
+        client = PoliteClient.from_config(cfg)
+        try:
+            res = sgd.probe_source(client, args.url, args.province, "Sở GD&ĐT")
+        finally:
+            client.close()
+        res.pop("_records", None)
+        res["attachments"] = [a for a in res.get("attachments", []) if a["score"] > 0][:12]
+        res["list_links"] = res.get("list_links", [])[:12]
+        res["samples"] = [{k: v for k, v in s.items() if v and k != "extra"} for s in res["samples"][:3]]
+        for page in res["pages"]:
+            page.pop("headers", None)
+        print(json.dumps(res, ensure_ascii=False, indent=1, default=str))
     elif args.cmd == "purge-places-cache":
         conn = db.connect(cfg.path("db"))
         print(f"Đã xóa {db.purge_expired_places(conn)} bản ghi Places quá hạn")

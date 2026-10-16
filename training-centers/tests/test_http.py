@@ -74,3 +74,13 @@ def test_waf_rejection_with_http_200_is_blocked(tmp_path):
     c = make_client(handler, tmp_path, [])
     with pytest.raises(BlockedError):
         c.get("https://e.vn/list")
+
+
+def test_rate_limit_is_per_host_and_reserves_slots():
+    slept = []
+    c = PoliteClient("ua", None, min_delay=2.0, sleep=slept.append, respect_robots=False)
+    c._wait_turn("a.vn", 2.0)
+    c._wait_turn("b.vn", 2.0)          # host khác: không phải chờ
+    c._wait_turn("a.vn", 2.0)
+    c._wait_turn("a.vn", 2.0)          # lượt thứ 3 cùng host: chờ ~4s vì lượt 2 đã giữ chỗ
+    assert len(slept) == 2 and 1.9 < slept[0] <= 2.0 and 3.9 < slept[1] <= 4.0

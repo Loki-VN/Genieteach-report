@@ -10,6 +10,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from .classify import CATEGORY_LABELS
+
 HEADER_FILL = PatternFill("solid", fgColor="E8E3F3")
 
 
@@ -76,29 +78,29 @@ def export_excel(conn: sqlite3.Connection, path: Path, notes: list[str]) -> dict
     counts["contacts_personal"] = len(rows)
 
     # Dữ liệu thô từ danh sách Sở (kể cả dòng ngoài phạm vi như tư vấn du học)
-    sgd_cols = ["province", "center_name", "in_scope", "legal_entity_name", "address_raw", "district",
+    sgd_cols = ["province", "old_province", "center_name", "in_scope", "legal_entity_name", "address_raw", "district",
                 "director_name", "director_appointment", "phone", "email", "other_contact", "license_number",
-                "license_date", "establish_decision", "license_issuer", "scope", "status_text", "as_of", "center_id",
+                "license_date", "establish_decision", "license_issuer", "scope", "status_text", "as_of", "list_kind", "center_id",
                 "source_url", "list_page", "fetched_at"]
     sgd_rows = []
     for r in conn.execute("SELECT * FROM source_records WHERE source='sgd' ORDER BY province, record_id"):
         p = json.loads(r["payload"])
         extra = p.get("extra") or {}
-        sgd_rows.append([r["province"], p["center_name"], p.get("in_scope", True), p.get("legal_entity_name"),
+        sgd_rows.append([r["province"], extra.get("old_province"), p["center_name"], p.get("in_scope", True), p.get("legal_entity_name"),
                          p.get("address_raw"), p.get("district"), p.get("director_name"), p.get("director_appointment"),
                          p.get("phone"), p.get("email"), p.get("other_contact"), p.get("license_number"),
                          p.get("license_date"), p.get("establish_decision"), p.get("license_issuer"), p.get("scope"),
-                         p.get("status_text"), extra.get("as_of"), r["center_id"], r["source_url"],
+                         p.get("status_text"), extra.get("as_of"), extra.get("list_kind"), r["center_id"], r["source_url"],
                          extra.get("list_page"), r["fetched_at"]])
     _sheet(wb, "nguon_so_gddt", sgd_cols, sgd_rows)
 
-    web_cols = ["url", "final_url", "title", "category", "subjects", "delivery_mode", "phones", "emails",
+    web_cols = ["url", "final_url", "discovered_from", "province_hint", "title", "category", "subjects", "delivery_mode", "phones", "emails",
                 "fanpage_urls", "tax_codes", "branch_addresses", "persons", "claims", "founded_year",
                 "last_activity_date", "pages", "errors", "center_id", "fetched_at"]
     web_rows = []
     for r in conn.execute("SELECT * FROM source_records WHERE source='website' ORDER BY record_id"):
         p = json.loads(r["payload"])
-        web_rows.append([p["url"], p.get("final_url"), p.get("title"), p.get("category"), p.get("subjects"),
+        web_rows.append([p["url"], p.get("final_url"), p.get("discovered_from"), p.get("province_hint"), p.get("title"), p.get("category"), p.get("subjects"),
                          p.get("delivery_mode"), [x for x, _ in p.get("phones", [])], [x for x, _ in p.get("emails", [])],
                          p.get("fanpage_urls"), p.get("tax_codes"), [a for a, _ in p.get("branch_addresses", [])],
                          [f"{x['title']}: {x['name']}" for x in p.get("persons", [])],
@@ -111,9 +113,12 @@ def export_excel(conn: sqlite3.Connection, path: Path, notes: list[str]) -> dict
                               "ORDER BY source, province")
     _sheet(wb, "nhat_ky_nguon", cols, rows)
 
+    cols, rows = coverage(conn)
+    _sheet(wb, "bao_phu_tinh", cols, rows)
+
     ws = wb.create_sheet("ghi_chu", 0)
     ws.column_dimensions["A"].width = 140
-    ws.append([f"Xuất lúc {datetime.now().strftime('%d/%m/%Y %H:%M')} — pipeline training-centers (GĐ0)"])
+    ws.append([f"Xuất lúc {datetime.now().strftime('%d/%m/%Y %H:%M')} — pipeline training-centers"])
     ws["A1"].font = Font(bold=True)
     for line in notes:
         ws.append([line])
@@ -121,3 +126,37 @@ def export_excel(conn: sqlite3.Connection, path: Path, notes: list[str]) -> dict
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
     return counts
+
+
+CATS = tuple(CATEGORY_LABELS.values())
+
+
+def coverage(conn: sqlite3.Connection) -> tuple[list[str], list[list]]:
+    """Báo cáo độ phủ theo 34 tỉnh: số trung tâm theo loại, số dòng Sở, nguồn đọc được / bị chặn."""
+    from .admin_units import provinces
+
+    cols = ["province_code", "province_new", "centers", *CATS, "branches", "contacts_personal", "sgd_rows",
+            "sgd_as_of", "sgd_sources_ok", "sgd_sources_failed", "websites_ok", "sgd_failed_detail"]
+    rows = []
+    unknown = conn.execute("SELECT count(*) FROM centers WHERE province_new IS NULL").fetchone()[0]
+    for prov in provinces():
+        c = prov.code
+        n = conn.execute("SELECT category, count(*) FROM centers WHERE province_new=? GROUP BY category",
+                         (prov.name,)).fetchall()
+        by_cat = {r[0]: r[1] for r in n}
+        sgd_rows = conn.execute("SELECT payload FROM source_records WHERE source='sgd' AND province=?", (c,)).fetchall()
+        as_of = sorted({(json.loads(r[0]).get("extra") or {}).get("as_of") or "" for r in sgd_rows} - {""})
+        log = conn.execute("SELECT outcome, url, detail FROM source_log WHERE source='sgd' AND province=?",
+                           (c,)).fetchall()
+        failed = [f"{r[1]} → {r[0]}" for r in log if r[0] != "ok"]
+        rows.append([c, prov.name, sum(by_cat.values()), *[by_cat.get(k, 0) for k in CATS],
+                     conn.execute("SELECT count(*) FROM branches WHERE province_new=?", (prov.name,)).fetchone()[0],
+                     conn.execute("SELECT count(*) FROM contacts_personal p JOIN centers USING(center_id) "
+                                  "WHERE province_new=?", (prov.name,)).fetchone()[0],
+                     len(sgd_rows), "; ".join(as_of), sum(1 for r in log if r[0] == "ok"), len(failed),
+                     conn.execute("SELECT count(*) FROM source_records s JOIN centers c USING(center_id) "
+                                  "WHERE s.source='website' AND c.province_new=?", (prov.name,)).fetchone()[0],
+                     "; ".join(failed)[:2000]])
+    if unknown:
+        rows.append(["", "(chưa xác định tỉnh)", unknown] + [""] * (len(cols) - 3))
+    return cols, rows

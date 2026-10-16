@@ -27,9 +27,11 @@ def probe_sgd(client: PoliteClient, cfg, prov: Province) -> dict:
     out = {"sources": []}
     records = []
     for s in sources:
-        res = sgd.probe_source(client, s["url"], prov.code, f"Sở GD&ĐT {prov.short_name}")
+        res = sgd.probe_source(client, s["url"], prov.code, s.get("issuer") or f"Sở GD&ĐT {prov.short_name}",
+                               follow=s.get("follow", 10))
         for rec in res.pop("_records"):
-            rec.extra.update({"list_page": s["url"], "list_kind": s.get("kind"), "as_of": s.get("as_of")})
+            rec.extra.update({"list_page": s["url"], "list_kind": s.get("kind"), "as_of": s.get("as_of"),
+                              "old_province": s.get("old_province")})
             records.append(rec)
         res["kind"] = s.get("kind")
         out["sources"].append(res)
@@ -109,8 +111,14 @@ RECORD_SOURCE = {"sgd": "sgd", "registry": "registry", "websites": "website", "p
 
 
 def _store(conn, source: str, prov: Province, r: dict) -> None:
-    """Lưu bản ghi thô + nhật ký URL của một nguồn vào DB (thay lần chạy trước)."""
-    db.replace_source_records(conn, RECORD_SOURCE[source], prov.code)
+    """Lưu bản ghi thô + nhật ký URL của một nguồn vào DB (thay lần chạy trước).
+
+    Lần chạy không lấy được bản ghi nào (mạng lỗi, bị chặn) chỉ thay nhật ký, giữ bản ghi cũ.
+    """
+    if source == "sgd" and not r.get("total_records"):
+        conn.execute("DELETE FROM source_log WHERE source IN ('sgd', 'sgd_file') AND province IS ?", (prov.code,))
+    else:
+        db.replace_source_records(conn, RECORD_SOURCE[source], prov.code)
     if source == "sgd":
         for rec in r.pop("_records", []):
             db.add_source_record(conn, "sgd", prov.code, rec.source_url, asdict(rec))

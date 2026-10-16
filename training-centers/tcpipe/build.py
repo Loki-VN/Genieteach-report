@@ -14,12 +14,15 @@ import hashlib
 import json
 import re
 import sqlite3
+from collections import defaultdict
 from datetime import date
+from pathlib import Path
 
-from rapidfuzz import fuzz
+from rapidfuzz import fuzz, process
 
 from .admin_units import normalize_address, province_by_code, strip_location_suffix
 from .classify import CATEGORY_LABELS, classify_subjects
+from .crawl import domain_matches_brand, email_domain
 from .normalize import clean_text, fold, is_mobile, is_role_email, name_key, normalize_phone, website_domain
 from .scale import Claim, estimate_scale
 from .status import StatusSignals, decide_status
@@ -114,9 +117,20 @@ def _license_state(status_text: str | None) -> str:
     return "listed"
 
 
+SEEDS_FILE = Path(__file__).resolve().parent.parent / "seeds" / "websites.json"
+
+
+def _seed_hints() -> dict[str, dict]:
+    if not SEEDS_FILE.exists():
+        return {}
+    return {e["url"]: {k: e.get(k) for k in ("province_hint", "brand_hint", "category_hint", "discovered_from")}
+            for e in json.loads(SEEDS_FILE.read_text(encoding="utf-8"))}
+
+
 def _items(conn: sqlite3.Connection) -> list[dict]:
     """Chuẩn hóa mỗi bản ghi nguồn về một dạng chung để khử trùng lặp."""
     items = []
+    seeds = _seed_hints()
     for row in conn.execute("SELECT record_id, source, province, source_url, payload, fetched_at FROM source_records "
                             "WHERE source IN ('sgd', 'website') ORDER BY record_id"):
         p = json.loads(row["payload"])
@@ -125,11 +139,18 @@ def _items(conn: sqlite3.Connection) -> list[dict]:
         if row["source"] == "sgd":
             if not p.get("in_scope", True):
                 continue
-            base.update(name=brand_name(p["center_name"]), key=brand_key(p["center_name"], row["province"]),
-                        phones=[p["phone"]] if p.get("phone") else [], tax=None, domain=None)
+            key = brand_key(p["center_name"], row["province"])
+            dom = email_domain(p.get("email"))
+            base.update(name=brand_name(p["center_name"]), key=key,
+                        phones=[p["phone"]] if p.get("phone") else [], tax=None,
+                        domain=dom if dom and domain_matches_brand(dom, key) else None)
         else:
+            for k, v in seeds.get(p["url"], {}).items():     # gợi ý từ seeds/websites.json cho bản ghi cũ
+                if p.get(k) is None:
+                    p[k] = v
+            base["raw"] = p
             name = site_brand(p)
-            prov = site_province(p)
+            prov = site_province(p) or p.get("province_hint")
             base.update(name=clean_text(name), key=strip_location_suffix(name_key(name), prov),
                         phones=[x for x, _ in p.get("phones", [])][:3],
                         tax=(p.get("tax_codes") or [None])[0], domain=website_domain(p.get("final_url") or p["url"]),
@@ -163,18 +184,38 @@ def site_province(p: dict) -> str | None:
 
 
 def _group(items: list[dict]) -> list[list[dict]]:
+    """Union-find theo chỉ mục (MST, domain, SĐT, tỉnh) thay vì so từng cặp — đủ nhanh cho cả nước."""
     uf = _UF(len(items))
-    for i, a in enumerate(items):
-        for j in range(i + 1, len(items)):
-            b = items[j]
-            if a["tax"] and a["tax"] == b["tax"]:
-                uf.union(i, j)
-            elif a["domain"] and a["domain"] == b["domain"]:
-                uf.union(i, j)
-            elif set(a["phones"]) & set(b["phones"]) and _similar(a["key"], b["key"], 60):
-                uf.union(i, j)
-            elif a["province"] == b["province"] and _similar(a["key"], b["key"], 92):
-                uf.union(i, j)
+    by_tax, by_domain, by_phone, by_prov = (defaultdict(list) for _ in range(4))
+    for i, it in enumerate(items):
+        if it["tax"]:
+            by_tax[it["tax"]].append(i)
+        if it["domain"]:
+            by_domain[it["domain"]].append(i)
+        for ph in set(it["phones"]):
+            by_phone[ph].append(i)
+        by_prov[it["province"]].append(i)
+    for idx in [*by_tax.values(), *by_domain.values()]:
+        for j in idx[1:]:
+            uf.union(idx[0], j)
+    for idx in by_phone.values():
+        for n, i in enumerate(idx):
+            for j in idx[n + 1:]:
+                if _similar(items[i]["key"], items[j]["key"], 60):
+                    uf.union(i, j)
+    for idx in by_prov.values():
+        keys = [items[i]["key"] or "" for i in idx]
+        if len(keys) < 2:
+            continue
+        a = process.cdist(keys, keys, scorer=fuzz.token_sort_ratio, workers=-1)
+        nospace = [k.replace(" ", "") for k in keys]
+        b = process.cdist(nospace, nospace, scorer=fuzz.ratio, workers=-1)
+        for n in range(len(idx)):
+            if len(keys[n]) < 3:
+                continue
+            for m in range(n + 1, len(idx)):
+                if (a[n, m] >= 92 or b[n, m] >= 92) and len(keys[m]) >= 3:
+                    uf.union(idx[n], idx[m])
     groups: dict[int, list[dict]] = {}
     for i, it in enumerate(items):
         groups.setdefault(uf.find(i), []).append(it)
@@ -246,6 +287,8 @@ def build(conn: sqlite3.Connection, cfg, today: date | None = None) -> dict[str,
             category, subjects = classify_subjects(text, categories, title=lead["name"])
         if category == "khac" and sgd and re.search(r"ngoai ngu|anh ngu|\bnn\b|language|english", fold(text)):
             category = "ngoai_ngu"
+        if category == "khac" and web and web[0]["raw"].get("category_hint") in CATEGORY_LABELS:
+            category = web[0]["raw"]["category_hint"]      # loại hình ghi trong danh sách chuỗi (seeds/websites.json)
         if web and web[0]["raw"].get("delivery_mode", "unknown") != "unknown":
             mode, mode_ev = web[0]["raw"]["delivery_mode"], web[0]["raw"]["delivery_mode_evidence"]
         elif sgd:

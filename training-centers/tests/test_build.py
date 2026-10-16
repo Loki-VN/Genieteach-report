@@ -43,3 +43,28 @@ def test_build_merges_branches_not_place_suffix(tmp_path, cfg):
     # giám đốc có SĐT di động + 'liên hệ khác'; SĐT bàn của Beeschool không phải liên hệ cá nhân
     assert contacts == {("Nguyễn Văn A", "0912000001"), ("Huyền", "0978437468")}
     assert all(r["source_url"] for r in conn.execute("SELECT source_url FROM contacts_personal"))
+
+
+def test_email_domain_links_sgd_row_only_when_domain_matches_brand():
+    from tcpipe.crawl import domain_matches_brand, email_domain
+
+    assert email_domain("info@oceanedu.edu.vn") == "oceanedu.edu.vn"
+    assert email_domain("abc@gmail.com") is None
+    assert email_domain("tt@quangninh.gov.vn") is None
+    assert domain_matches_brand("oceanedu.edu.vn", brand_key("Trung tâm Ngoại ngữ Ocean Edu Hạ Long", "22"))
+    assert not domain_matches_brand("quangninh.edu.vn", brand_key("Trung tâm Anh ngữ Huyền Tây", "14"))
+
+
+def test_group_uses_indexes_and_fuzzy_within_province():
+    from tcpipe.build import _group
+
+    def item(name, prov, phones=(), domain=None):
+        return {"key": brand_key(name, prov), "province": prov, "phones": list(phones), "tax": None, "domain": domain}
+
+    items = [item("Trung tâm Ngoại ngữ Shelton Hạ Long", "22"), item("Trung tâm Anh ngữ Shelton Cẩm Phả", "22"),
+             item("Trung tâm Ngoại ngữ Shelton", "14"),                       # khác tỉnh, không SĐT/domain chung
+             item("Trung tâm Ngoại ngữ ABC", "14", ["0912345678"]),
+             item("Trung tâm Tin học XYZ", "14", ["0912345678"]),             # trùng SĐT giám đốc, tên khác
+             item("Anh ngữ Apollo", "01", domain="apollo.edu.vn"), item("Apollo Quảng Ninh", "22", domain="apollo.edu.vn")]
+    sizes = sorted(len(g) for g in _group(items))
+    assert sizes == [1, 1, 1, 2, 2]
