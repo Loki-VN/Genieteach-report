@@ -100,7 +100,7 @@ def crawl_sites(cfg, entries: list[dict], workers: int = 6, skip_done: bool = Tr
     conn = db.connect(cfg.path("db"))
     done = set()
     if skip_done:
-        done = {r[0] for r in conn.execute("SELECT url FROM source_log WHERE source='website'")}
+        done = {r[0] for r in conn.execute("SELECT url FROM source_log WHERE source='website' AND outcome='ok'")}
     seen, todo = set(), []
     for e in entries:
         d = website_domain(e["url"])
