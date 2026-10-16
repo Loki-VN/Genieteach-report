@@ -1,0 +1,506 @@
+[
+ {
+  "brand_hint": "VUS",
+  "url": "https://vus.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "ILA",
+  "url": "https://ila.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Apollo English",
+  "url": "https://apollo.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Langmaster",
+  "url": "https://langmaster.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Anh ngữ Ms Hoa",
+  "url": "https://www.anhngumshoa.com/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "IELTS Fighter",
+  "url": "https://ielts-fighter.com/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "MindX",
+  "url": "https://mindx.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "TEKY",
+  "url": "https://teky.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "DOL English",
+  "url": "https://www.dolenglish.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Wall Street English",
+  "url": "https://www.wallstreetenglish.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Pasal",
+  "url": "https://pasal.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "YOLA",
+  "url": "https://yola.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Language Link Academic",
+  "url": "https://llv.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Anh ngữ AMA",
+  "url": "https://ama.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Apax Leaders",
+  "url": "https://www.apaxleaders.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Jaxtina English",
+  "url": "https://jaxtina.com/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Ocean Edu",
+  "url": "https://ocean.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Smartcom English",
+  "url": "https://smartcom.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "AMES English",
+  "url": "https://ames.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "EIV Education",
+  "url": "https://eiv.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Anh ngữ RES",
+  "url": "https://res.edu.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Atlantic Five-Star English",
+  "url": "https://atlantic.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Anh ngữ Athena",
+  "url": "https://anhnguathena.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Oxford English UK Vietnam",
+  "url": "https://oxford.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Benative",
+  "url": "https://benative.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Cleverlearn Vietnam",
+  "url": "https://cleverlearnvietnam.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "IELTS Vietop",
+  "url": "https://www.ieltsvietop.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Anh ngữ ZIM",
+  "url": "https://zim.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "The IELTS Workshop",
+  "url": "https://theieltsworkshop.com/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "IELTS Ngọc Bách",
+  "url": "https://ngocbach.com/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "IELTS LangGo",
+  "url": "https://langgo.edu.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Anh ngữ JOLO",
+  "url": "https://jolo.edu.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "British Council Việt Nam",
+  "url": "https://www.britishcouncil.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "IvyPrep Education",
+  "url": "https://ivyprep.edu.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "I Can Read Việt Nam",
+  "url": "https://icanread.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "American Study",
+  "url": "https://americanstudy.edu.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "EduPath",
+  "url": "https://testprep-edupath.org.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "48",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Clever Academy",
+  "url": "https://cleveracademy.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "79",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Summit Education",
+  "url": "https://summit.edu.vn/",
+  "category_hint": "luyen_thi",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "THANHMAIHSK",
+  "url": "https://thanhmaihsk.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Tiếng Trung Ánh Dương",
+  "url": "https://tiengtrunganhduong.com/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "Tiếng Trung SOFL",
+  "url": "https://trungtamtiengtrung.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain xác nhận qua kết quả tìm kiếm web)"
+ },
+ {
+  "brand_hint": "TBT Việt Nam",
+  "url": "https://tbtvietnam.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": "01",
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "ChineMaster",
+  "url": "https://chinemaster.com/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Hoa văn SHZ",
+  "url": "https://hoavanshz.com/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Nhật ngữ SOFL",
+  "url": "https://trungtamnhatngu.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Kosei",
+  "url": "https://kosei.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Nhật ngữ Đông Du",
+  "url": "https://dongdu.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Kanata",
+  "url": "https://kanata.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Thanh Giang",
+  "url": "https://thanhgiang.com.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Dekiru",
+  "url": "https://dekiru.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Hàn ngữ SOFL",
+  "url": "https://trungtamtienghan.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Sài Gòn Vina",
+  "url": "https://saigonvina.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "IDECAF",
+  "url": "https://idecaf.gov.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Institut français du Vietnam",
+  "url": "https://institutfrancais-vietnam.com/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Hallo",
+  "url": "https://hallo.edu.vn/",
+  "category_hint": "ngoai_ngu",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "FPT Aptech",
+  "url": "https://aptech.fpt.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "FPT Arena",
+  "url": "https://arena.fpt.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "NIIT Hà Nội",
+  "url": "https://niithanoi.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "CodeGym",
+  "url": "https://codegym.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Techmaster",
+  "url": "https://techmaster.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Rikkei Academy",
+  "url": "https://rikkeiacademy.com/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Nhất Nghệ",
+  "url": "https://nhatnghe.com/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "CSC ĐH KHTN",
+  "url": "https://csc.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "iSpace",
+  "url": "https://ispace.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "VietPro",
+  "url": "https://vietpro.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Khoa Phạm",
+  "url": "https://khoapham.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "CyberSoft",
+  "url": "https://cybersoft.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "VTC Academy",
+  "url": "https://vtc.edu.vn/",
+  "category_hint": "tin_hoc_stem",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "UCMAS",
+  "url": "https://ucmas.vn/",
+  "category_hint": "ky_nang",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "POMath",
+  "url": "https://pomath.vn/",
+  "category_hint": "ky_nang",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ },
+ {
+  "brand_hint": "Kumon",
+  "url": "https://kumon.edu.vn/",
+  "category_hint": "ky_nang",
+  "province_hint": null,
+  "discovered_from": "danh sách chuỗi trung tâm (domain chưa xác nhận — kiểm chứng tiêu đề khi crawl)"
+ }
+]
